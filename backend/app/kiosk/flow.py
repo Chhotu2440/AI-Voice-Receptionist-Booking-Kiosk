@@ -4,6 +4,7 @@ and neither can skip a mandatory step."""
 
 from __future__ import annotations
 
+import hashlib
 import uuid
 from collections.abc import Awaitable, Callable
 from datetime import date, datetime
@@ -73,6 +74,11 @@ EDIT_TARGETS = {
 }
 HOLD_RECOVERABLE = {"HOLD_EXPIRED", "HOLD_NOT_ACTIVE", "SLOT_UNAVAILABLE"}
 Handler = Callable[[str, KioskState, dict[str, Any]], Awaitable[KioskState]]
+
+
+def idem_key(*parts: object) -> str:
+    """Deterministic idempotency key that fits the 64-char column (UUID-based parts would not)."""
+    return "kiosk-" + hashlib.sha256(":".join(str(p) for p in parts).encode()).hexdigest()[:48]
 
 
 def allowed_intents(s: KioskState) -> set[str]:
@@ -316,7 +322,7 @@ class KioskFlow:
                         guest_count=s.guest_count,
                     ),
                     channel=KIOSK,
-                    idempotency_key=f"kiosk-{s.session_id}-{s.intent_seq}",
+                    idempotency_key=idem_key(s.session_id, "hold", s.intent_seq),
                 )
             except DomainError:
                 await self._load_slots(db, s)  # someone else got it: show fresh times
@@ -360,7 +366,7 @@ class KioskFlow:
                     self.settings,
                     data,
                     channel=KIOSK,
-                    idempotency_key=f"kiosk-{s.session_id}-book-{s.hold_id}",
+                    idempotency_key=idem_key(s.session_id, "book", s.hold_id),
                     actor=Actor("KIOSK", device_id),
                 )
             except DomainError as exc:
@@ -402,7 +408,7 @@ class KioskFlow:
                 db,
                 data,
                 channel=KIOSK,
-                idempotency_key=f"kiosk-{s.session_id}-enq",
+                idempotency_key=idem_key(s.session_id, "enquiry"),
                 actor=Actor("KIOSK", device_id),
             )
         s.enquiry_reference = body["reference"]

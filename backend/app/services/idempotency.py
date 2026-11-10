@@ -52,6 +52,8 @@ def validate_key(key: str | None) -> str:
 async def begin(
     session: AsyncSession, scope: str, key: str, payload: dict[str, Any]
 ) -> tuple[IdempotencyKey | None, Replay | None]:
+    if not 1 <= len(key) <= 64 or len(scope) > 32:
+        raise ValueError("idempotency key must be 1-64 characters")  # programming error, not user input
     request_hash = _hash(payload)
     row = IdempotencyKey(scope=scope, key=key, request_hash=request_hash, expires_at=utcnow() + TTL)
     session.add(row)

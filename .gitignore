@@ -23,3 +23,12 @@ node_modules/
 Thumbs.db
 .idea/
 .vscode/
+
+# Local env overrides
+*.local
+
+# Kiosk build/test output
+kiosk/test-results/
+kiosk/playwright-report/
+kiosk/e2e-results.xml
+*.tsbuildinfo

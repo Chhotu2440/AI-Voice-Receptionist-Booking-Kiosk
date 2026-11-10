@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #07080f;
+  color: #edeff7;
+  font-family: Inter, "Noto Sans Devanagari", sans-serif;
+  /* Kiosk: no text selection, no callouts, no overscroll bounce, no double-tap zoom. */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  overflow: hidden;
+}
+
+button:focus-visible {
+  outline: 3px solid #22e4ff;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

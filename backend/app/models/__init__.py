@@ -17,6 +17,7 @@ from app.models.booking import (
 )
 from app.models.catalogue import Occasion, Package, PackageFeature, PackagePricingRule
 from app.models.identity import Permission, RefreshToken, Role, User, role_permissions, user_roles
+from app.models.kiosk import KioskDevice, KioskSession
 from app.models.schedule import BusinessHours, BusinessLocation, Resource, ScheduleException
 
 __all__ = [
@@ -33,6 +34,8 @@ __all__ = [
     "Customer",
     "CustomerConsent",
     "IdempotencyKey",
+    "KioskDevice",
+    "KioskSession",
     "Occasion",
     "Package",
     "PackageFeature",

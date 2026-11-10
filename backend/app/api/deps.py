@@ -17,6 +17,7 @@ from app.core.ratelimit import RateLimiter
 from app.core.security import decode_token
 from app.db.session import session_scope
 from app.models.identity import User
+from app.models.kiosk import KioskDevice
 from app.repositories import users as users_repo
 from app.services.context import Actor
 
@@ -61,6 +62,31 @@ async def get_current_user(
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+async def device_from_token(session: AsyncSession, settings: Settings, token: str) -> KioskDevice:
+    claims = decode_token(settings, token, expected_typ="device")
+    try:
+        device_id = uuid.UUID(str(claims["sub"]))
+    except ValueError as exc:
+        raise UnauthenticatedError("Invalid credentials.") from exc
+    device = await session.get(KioskDevice, device_id)
+    if device is None or device.status != "ACTIVE":
+        raise UnauthenticatedError("Invalid credentials.")
+    return device
+
+
+async def get_current_device(
+    session: SessionDep,
+    settings: SettingsDep,
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)],
+) -> KioskDevice:
+    if credentials is None or credentials.scheme.lower() != "bearer":
+        raise UnauthenticatedError()
+    return await device_from_token(session, settings, credentials.credentials)
+
+
+CurrentDevice = Annotated[KioskDevice, Depends(get_current_device)]
 
 
 def require_permission(*codes: str) -> Callable[[User], Awaitable[User]]:

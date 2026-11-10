@@ -18,6 +18,9 @@ from app.core.logging import configure_logging
 from app.core.middleware import RequestContextMiddleware
 from app.core.ratelimit import InMemoryRateLimiter, RedisRateLimiter
 from app.db.session import build_engine, build_sessionmaker
+from app.kiosk.flow import KioskFlow
+from app.kiosk.store import InMemoryKioskStateStore, RedisKioskStateStore
+from app.websocket import kiosk_ws
 
 log = logging.getLogger(__name__)
 
@@ -40,6 +43,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             else:
                 app.state.redis = None
                 app.state.rate_limiter = InMemoryRateLimiter()
+        if getattr(app.state, "kiosk_flow", None) is None:
+            store = (
+                RedisKioskStateStore(app.state.redis)
+                if app.state.redis is not None
+                else InMemoryKioskStateStore()
+            )
+            app.state.kiosk_flow = KioskFlow(app.state.sessionmaker, settings, store)
+        app.state.kiosk_locks = {}
         log.info("startup", extra={"env": settings.app_env})
         try:
             yield
@@ -65,6 +76,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.rate_limiter = None
     app.state.redis = None
     app.state.engine = None
+    app.state.kiosk_flow = None
 
     app.add_middleware(RequestContextMiddleware)
     if settings.cors_origins:
@@ -78,4 +90,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_exception_handlers(app)
     app.include_router(health.router)
     app.include_router(api_router)
+    app.include_router(kiosk_ws.router)
     return app

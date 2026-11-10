@@ -4,6 +4,7 @@ import { Button } from "./components/ui";
 import { ApiError, deviceToken, heartbeat, loadCreds, saveCreds } from "./lib/api";
 import { KioskSocket } from "./lib/socket";
 import { usePresence } from "./lib/usePresence";
+import { useVoice } from "./lib/useVoice";
 import { ConfirmedScreen, CancelledScreen, EnquiryDoneScreen, StaffScreen } from "./screens/End";
 import { DateScreen, PackagesScreen, SlotsScreen, SummaryScreen } from "./screens/Booking";
 import { NameScreen, PhoneScreen } from "./screens/Customer";
@@ -112,6 +113,7 @@ function Kiosk({ onUnpaired }: { onUnpaired: () => void }) {
     lastTouch.current = Date.now() - idleTimeout * 1000 - 1;
   });
   const camera = useKiosk((s) => s.camera);
+  useVoice(getToken);
   const presenceDebug = useKiosk((s) => s.config.presence_debug);
 
   useEffect(() => {

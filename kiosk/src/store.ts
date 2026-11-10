@@ -2,6 +2,7 @@ import { create } from "zustand";
 
 import { STRINGS } from "./i18n";
 import type { KioskSocket } from "./lib/socket";
+import type { VoiceStatus } from "./lib/voice";
 import type { KioskConfig, KioskState, Lang, ServerMessage } from "./types";
 
 type Conn = "connecting" | "online" | "offline";
@@ -15,6 +16,8 @@ interface KioskStore {
   config: KioskConfig;
   socket: KioskSocket | null;
   camera: { ok: boolean | null; faces: number; present: boolean };
+  voice: { status: VoiceStatus; caption: { role: string; text: string } | null; muted: boolean };
+  setVoice: (v: Partial<KioskStore["voice"]>) => void;
   setCamera: (c: Partial<KioskStore["camera"]>) => void;
   setSocket: (s: KioskSocket | null) => void;
   setConn: (c: Conn) => void;
@@ -46,6 +49,8 @@ export const useKiosk = create<KioskStore>((set, get) => ({
   config: DEFAULT_CONFIG,
   socket: null,
   camera: { ok: null, faces: 0, present: false },
+  voice: { status: "off", caption: null, muted: false },
+  setVoice: (v) => set({ voice: { ...get().voice, ...v } }),
   setCamera: (c) => set({ camera: { ...get().camera, ...c } }),
   setSocket: (socket) => set({ socket }),
   setConn: (conn) => set(conn === "online" ? { conn } : { conn, pending: null }),

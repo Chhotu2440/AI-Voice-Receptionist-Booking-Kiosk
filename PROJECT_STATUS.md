@@ -1,6 +1,20 @@
 # Project Status
 
-**Updated:** 2026-11-10 · **Phase:** 4, Kiosk frontend (Sprint 3 complete) · **Overall:** 🟢 On track
+**Updated:** 2026-11-11 · **Phase:** 5, Sprint 4 in progress (presence ✅, voice gateway ✅, live voice test pending) · **Overall:** 🟢
+
+## Sprint 4 progress
+- **Done:** on-device presence detection (CAM-01/02), with unit and E2E tests; kiosk CI green.
+- **Done:** voice gateway `/ws/voice`, provider interface, OpenAI Realtime and Gemini Live adapters, 19 allowlisted tools on the kiosk state machine, barge-in, touch-only fallback. 160 backend tests pass locally.
+- **Done (untested live):** kiosk mic capture and playback worklets, captions, mic toggle. Type-check, unit tests and build pass.
+- **Next:**
+  1. You add `OPENAI_API_KEY` and `GEMINI_API_KEY` to `backend/.env`.
+  2. Set `voice_enabled: true` on the kiosk (admin PATCH).
+  3. Live test both providers on a laptop mic.
+  4. Fix any protocol mismatches; the adapters haven't been verified against the real services yet.
+  5. Run the bake-off scorecard (VOICE-01) and log usage to the DB (VOICE-06).
+
+---
+
 
 ## Sprint 3 PM report: kiosk touch frontend
 **Goal:** a customer can complete a booking at the kiosk by touch alone, with the backend owning the flow. **Result:** done. A full touch booking runs end to end in Playwright against the real backend, and was checked by hand in the browser (EN and HI).

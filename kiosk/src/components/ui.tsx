@@ -69,16 +69,19 @@ export function Tile({
   );
 }
 
-export function Assistant({ speaking = false }: { speaking?: boolean }) {
+export function Assistant() {
+  const status = useKiosk((s) => s.voice.status);
+  const speaking = status === "speaking";
+  const listening = status === "listening";
   return (
-    <div className="relative mx-auto h-56 w-56" aria-hidden>
-      <div className="absolute inset-0 rounded-full bg-laser/10 blur-2xl" />
+    <div className="relative mx-auto h-56 w-56" aria-hidden data-voice={status}>
+      <div className={`absolute inset-0 rounded-full blur-2xl ${speaking ? "bg-plasma/25" : "bg-laser/10"}`} />
       <div
-        className={`absolute inset-6 rounded-full border-4 border-laser/80 bg-gradient-to-br from-arena-700 to-arena-950 ${
-          speaking ? "" : "animate-breathe"
+        className={`absolute inset-6 rounded-full border-4 bg-gradient-to-br from-arena-700 to-arena-950 ${
+          speaking ? "animate-pulse border-plasma" : listening ? "border-signal" : "animate-breathe border-laser/80"
         }`}
       />
-      <div className="absolute inset-[38%] rounded-full bg-laser shadow-laser" />
+      <div className={`absolute inset-[38%] rounded-full shadow-laser ${speaking ? "bg-plasma" : "bg-laser"}`} />
       <div className="absolute left-1/2 top-[18%] h-[64%] w-1 -translate-x-1/2 rounded bg-plasma/60" />
     </div>
   );
@@ -139,6 +142,7 @@ export function Screen({ prompt, sub, children }: { prompt: string; sub?: string
             {prompt}
           </h1>
           {sub ? <p className="text-2xl text-ink-muted">{sub}</p> : null}
+          <VoiceCaption />
         </section>
         <section className="flex min-h-0 flex-1 flex-col justify-center animate-rise">{children}</section>
       </main>
@@ -161,6 +165,7 @@ export function Screen({ prompt, sub, children }: { prompt: string; sub?: string
           ) : null}
         </div>
         <div className="flex gap-4">
+          <MicToggle />
           <Button
             variant="secondary"
             onClick={() => send("set_language", { language: lang === "en" ? "hi" : "en" })}
@@ -260,5 +265,33 @@ export function Countdown({ until, onExpire }: { until: string; onExpire?: () =>
     <span data-testid="countdown" className={`font-display ${left <= 60 ? "text-alert" : "text-laser"}`}>
       {mm}:{ss}
     </span>
+  );
+}
+
+function VoiceCaption() {
+  const voice = useKiosk((s) => s.voice);
+  if (voice.status === "off" || voice.status === "unavailable" || !voice.caption) return null;
+  return (
+    <p data-testid="voice-caption" className={`text-2xl ${voice.caption.role === "user" ? "text-ink-muted italic" : "text-laser"}`}>
+      {voice.caption.role === "user" ? "🎤 " : ""}
+      {voice.caption.text}
+    </p>
+  );
+}
+
+function MicToggle() {
+  const voice = useKiosk((s) => s.voice);
+  const setVoice = useKiosk((s) => s.setVoice);
+  if (voice.status === "off" || voice.status === "unavailable") return null;
+  return (
+    <button
+      type="button"
+      data-testid="mic-toggle"
+      onClick={() => setVoice({ muted: !voice.muted })}
+      className={`min-h-[72px] rounded-2xl border px-6 text-[26px] ${voice.muted ? "border-alert text-alert" : "border-signal text-signal"}`}
+      aria-label={voice.muted ? "Unmute microphone" : "Mute microphone"}
+    >
+      {voice.muted ? "🔇" : "🎤"}
+    </button>
   );
 }

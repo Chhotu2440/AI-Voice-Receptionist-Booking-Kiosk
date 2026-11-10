@@ -51,6 +51,12 @@ async def kiosk_socket(ws: WebSocket) -> None:
         return
     await ws.accept()
     flow: KioskFlow = ws.app.state.kiosk_flow
+    send_lock = asyncio.Lock()
+
+    async def send(msg: dict[str, Any]) -> None:
+        async with send_lock:  # replies and pushed voice updates come from two tasks
+            await ws.send_json(msg)
+
     try:
         first = json.loads(await asyncio.wait_for(ws.receive_text(), timeout=AUTH_TIMEOUT_S))
         if first.get("type") != "auth":
@@ -65,20 +71,30 @@ async def kiosk_socket(ws: WebSocket) -> None:
     lock: asyncio.Lock = ws.app.state.kiosk_locks.setdefault(device_id, asyncio.Lock())
     async with lock:
         state = await flow.connect(device_id, first.get("resume_session_id"))
-    await ws.send_json(_state_msg(state))
+    await send(_state_msg(state))
 
+    # Changes made by the voice agent (or the system) are pushed to the screen as they happen.
+    updates = flow.bus.subscribe(device_id)
+
+    async def forward_updates() -> None:
+        while True:
+            change = await updates.get()
+            if change.source != "touch":
+                await send(_state_msg(change.state))
+
+    forwarder = asyncio.create_task(forward_updates())
     try:
         while True:
             raw = await ws.receive_text()
             if len(raw) > MAX_FRAME_BYTES:
-                await ws.send_json({"type": "error", "error": {"code": "FRAME_TOO_LARGE", "message": ""}})
+                await send({"type": "error", "error": {"code": "FRAME_TOO_LARGE", "message": ""}})
                 continue
             try:
                 msg = json.loads(raw)
             except json.JSONDecodeError:
                 continue
             if msg.get("type") == "ping":
-                await ws.send_json({"type": "pong"})
+                await send({"type": "pong"})
                 continue
             if msg.get("type") != "intent":
                 continue
@@ -88,7 +104,7 @@ async def kiosk_socket(ws: WebSocket) -> None:
                 async with lock:
                     state = await flow.handle(device_id, str(msg.get("name", "")), payload)
             except DomainError as exc:
-                await ws.send_json(
+                await send(
                     {
                         "type": "error",
                         "error": {"code": exc.code, "message": exc.message},
@@ -98,7 +114,7 @@ async def kiosk_socket(ws: WebSocket) -> None:
                 state = await flow.current(device_id)
             except Exception:
                 log.exception("kiosk_intent_failed", extra={"intent": msg.get("name")})
-                await ws.send_json(
+                await send(
                     {
                         "type": "error",
                         "error": {"code": "INTERNAL", "message": "Something went wrong. Please try again."},
@@ -106,6 +122,9 @@ async def kiosk_socket(ws: WebSocket) -> None:
                     }
                 )
                 state = await flow.current(device_id)
-            await ws.send_json(_state_msg(state, reply_to))
+            await send(_state_msg(state, reply_to))
     except WebSocketDisconnect:
         return
+    finally:
+        forwarder.cancel()
+        flow.bus.unsubscribe(device_id, updates)

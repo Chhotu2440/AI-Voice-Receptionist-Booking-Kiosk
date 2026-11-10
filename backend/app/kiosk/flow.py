@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.core.config import Settings
 from app.core.exceptions import DomainError, ValidationFailed
 from app.core.timeutil import today_local, utcnow
+from app.kiosk.bus import KioskBus, Source, StateChange
 from app.kiosk.state import FLOW, KioskError, KioskState, PackageCard
 from app.kiosk.store import KioskStateStore
 from app.models.kiosk import KioskSession
@@ -88,11 +89,16 @@ def allowed_intents(s: KioskState) -> set[str]:
 
 class KioskFlow:
     def __init__(
-        self, maker: async_sessionmaker[AsyncSession], settings: Settings, store: KioskStateStore
+        self,
+        maker: async_sessionmaker[AsyncSession],
+        settings: Settings,
+        store: KioskStateStore,
+        bus: KioskBus | None = None,
     ) -> None:
         self.maker = maker
         self.settings = settings
         self.store = store
+        self.bus = bus or KioskBus()
 
     # --- entry points ------------------------------------------------------------------------------
 
@@ -111,7 +117,9 @@ class KioskFlow:
             await self.store.put(device_id, s)
         return s
 
-    async def handle(self, device_id: str, name: str, payload: dict[str, Any]) -> KioskState:
+    async def handle(
+        self, device_id: str, name: str, payload: dict[str, Any], source: Source = "touch"
+    ) -> KioskState:
         s = await self.current(device_id)
         if name not in allowed_intents(s):
             raise InvalidTransitionError(details={"state": s.state, "intent": name})
@@ -129,6 +137,7 @@ class KioskFlow:
         if s.state in FLOW:
             s.furthest_index = max(s.furthest_index, FLOW.index(s.state))
         await self.store.put(device_id, s)
+        self.bus.publish(device_id, StateChange(s, source, name))
         return s
 
     # --- helpers ----------------------------------------------------------------------------------

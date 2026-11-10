@@ -42,6 +42,17 @@ class Settings(BaseSettings):
     public_rate_limit_per_minute: int = 30
     booking_rate_limit_per_minute: int = 10
 
+    # --- voice (ADR-005/007): provider keys stay on the server; the kiosk never sees them ---
+    voice_provider: Literal["openai", "gemini", "scripted"] = "openai"
+    openai_api_key: SecretStr | None = None
+    openai_realtime_model: str = "gpt-realtime-2.1-mini"
+    openai_voice: str = "marin"
+    openai_transcribe_model: str = "gpt-4o-mini-transcribe"
+    gemini_api_key: SecretStr | None = None
+    gemini_live_model: str = "gemini-3.8-live"
+    gemini_voice: str = "Kore"
+    voice_max_session_seconds: int = 600
+
     cors_origins: list[str] = Field(default_factory=list)
     business_timezone: str = "Asia/Kolkata"
     check_migrations_on_ready: bool = True
@@ -55,6 +66,8 @@ class Settings(BaseSettings):
                 raise ValueError("JWT_SECRET must be set to a random value of at least 32 characters")
             if not self.redis_url:
                 raise ValueError("REDIS_URL is required in staging/prod")
+            if self.voice_provider == "scripted":
+                raise ValueError("VOICE_PROVIDER=scripted is a test double and can't run in staging/prod")
             if not self.refresh_cookie_secure:
                 raise ValueError("REFRESH_COOKIE_SECURE must be true in staging/prod")
         return self

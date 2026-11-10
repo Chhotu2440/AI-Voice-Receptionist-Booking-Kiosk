@@ -20,6 +20,7 @@ from app.core.ratelimit import InMemoryRateLimiter, RedisRateLimiter
 from app.db.session import build_engine, build_sessionmaker
 from app.kiosk.flow import KioskFlow
 from app.kiosk.store import InMemoryKioskStateStore, RedisKioskStateStore
+from app.voice import gateway as voice_gateway
 from app.websocket import kiosk_ws
 
 log = logging.getLogger(__name__)
@@ -91,4 +92,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(health.router)
     app.include_router(api_router)
     app.include_router(kiosk_ws.router)
+    app.include_router(voice_gateway.router)
     return app

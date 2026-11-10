@@ -1,9 +1,9 @@
 # Project Status
 
-**Updated:** 2026-11-10 · **Phase:** 2, Backend foundation (Sprint 1) · **Overall:** 🟢 On track, with one environment gap (no MySQL or Docker available locally yet)
+**Updated:** 2026-11-10 · **Phase:** 2, Backend foundation (Sprint 1) · **Overall:** 🟢 On track. MySQL verified in CI; one CI gate (Trivy image scan) still red
 
 ## Sprint 1 PM report
-**Goal:** a running backend foundation (auth/RBAC, catalogue, pricing engine, schedule configuration), with tests and CI. **Result:** code complete and green on SQLite. MySQL verification is pending a CI run.
+**Goal:** a running backend foundation (auth/RBAC, catalogue, pricing engine, schedule configuration), with tests and CI. **Result:** complete. Green on SQLite locally and on MySQL 8.4 in GitHub Actions.
 
 ### Completed
 - **Decisions:** ADR-003…011 and 013 approved (2026-11-10) → [PROJECT_DECISIONS.md](PROJECT_DECISIONS.md)
@@ -25,8 +25,19 @@
 | ruff / ruff format / mypy --strict | clean |
 | Smoke: real startup (alembic upgrade → seed → uvicorn → `/readyz`, `/packages`) | OK |
 
+### CI (GitHub Actions): https://github.com/Chhotu2440/AI-Voice-Receptionist-Booking-Kiosk/actions
+| Step | Result |
+|---|---|
+| Lint, format, mypy strict | ✅ |
+| Tests on SQLite and on **MySQL 8.4** (77) | ✅ |
+| Migrations on MySQL: upgrade, drift check, downgrade, re-upgrade | ✅ (after fixing the downgrade, which dropped FK-backing indexes) |
+| Bandit, pip-audit | ✅ |
+| Docker image build | ✅ |
+| Trivy image scan | ❌ cause not yet read (logs need a GitHub sign-in) |
+
 ### Not yet verified
-- **MySQL 8.4 run of the suite** and the **Docker Compose stack**. Neither Docker nor MySQL is installed on this machine. The CI workflow covers both, but the folder is not a git repo with a GitHub remote yet.
+- The **Docker Compose stack** has not been run (Docker is not installed on this machine). The image itself builds in CI.
+- The cause of the Trivy failure.
 - TOTP 2FA (moved to CORE-05, P1).
 
 ### Blocked / waiting on business
@@ -40,4 +51,4 @@ FastAPI `api` process (modular monolith) → MySQL 8 (authoritative) + Redis (ra
 R-01 Hinglish accuracy (20) · R-02 unknown capacity rules (16): now the critical path for Sprint 2 · R-03 migration double calendar (15).
 
 ## Next milestone
-**Sprint 2: Booking engine.** Slot grid generator, availability, holds, atomic and idempotent booking, concurrency suite on MySQL. **Prerequisites:** answers to D-01/D-02, plus Docker Desktop (or a MySQL 8 instance) on the dev machine, or a GitHub repo for CI.
+**Sprint 2: Booking engine.** Slot grid generator, availability, holds, atomic and idempotent booking, concurrency suite on MySQL. **Prerequisites:** answers to D-01/D-02. MySQL concurrency tests will run in CI.

@@ -11,13 +11,13 @@ Statuses: BACKLOG · READY · IN_PROGRESS · BLOCKED · IN_REVIEW · TESTING · 
 | DISC-05 | Business decisions workshop | Close D-01…D-10 | P0 | Discovery | — | 0.5 | Decisions logged in PROJECT_DECISIONS.md | READY | PM/OWN |
 | DISC-06 | Hardware quotes | 3 dated quotes for the budget config | P1 | Discovery | D-08 | 0.5 | Quotes in doc 15 | READY | OWN/PM |
 | PLAT-01 | Repo & tooling | Monorepo layout, ruff, mypy, pytest, pre-commit, ESLint/Prettier | P0 | Platform | DISC-05 | 0.5 | `make check` passes on an empty skeleton | COMPLETED | BE |
-| PLAT-02 | Docker Compose stack | api, voice, worker, mysql 8.4, redis 7, nginx | P0 | Platform | PLAT-01 | 1 | `docker compose up` → /readyz green | IN_REVIEW (written; not run — Docker not installed on dev machine) | OPS |
-| PLAT-03 | CI pipeline | GitHub Actions: lint, type, tests with MySQL/Redis services, build, Trivy, pip-audit | P0 | Platform | PLAT-02 | 1 | Pipeline green on PR | IN_REVIEW (written; needs git repo + GitHub remote to run) | OPS |
+| PLAT-02 | Docker Compose stack | api, voice, worker, mysql 8.4, redis 7, nginx | P0 | Platform | PLAT-01 | 1 | `docker compose up` → /readyz green | IN_REVIEW (image builds in CI; compose stack not yet run) | OPS |
+| PLAT-03 | CI pipeline | GitHub Actions: lint, type, tests with MySQL/Redis services, build, Trivy, pip-audit | P0 | Platform | PLAT-02 | 1 | Pipeline green on PR | IN_REVIEW (all test/migration/security steps green; Trivy image scan failing, cause not yet read) | OPS |
 | PLAT-04 | Core infra code | Settings, JSON logging, error envelope, request id, health/ready, timeutil | P0 | Platform | PLAT-01 | 1 | Unit tests; error format matches doc 09 | COMPLETED | BE |
-| CORE-01 | Auth & RBAC | Users, roles, permissions, JWT, refresh rotation, TOTP, lockout, audit hook | P0 | Backend | PLAT-04 | 2 | Security tests (doc 22 SEC-*) pass | TESTING (green on SQLite; MySQL CI run pending) | BE |
-| CORE-02 | Catalogue | Packages, features, occasions, business info + admin CRUD + seeds | P0 | Backend | CORE-01 | 1.5 | API tests; seed matches website prices | TESTING (green on SQLite; MySQL CI run pending) | BE |
-| CORE-03 | Pricing engine | Rules (day type, date, promo, group), tax, charges, quote, snapshot | P0 | Backend | CORE-02 | 2 | ≥ 30 unit cases incl. Fri=weekend, holiday override, inclusive/exclusive GST, rounding | TESTING (green on SQLite; MySQL CI run pending) | BE |
-| CORE-04 | Schedule config | Hours, exceptions, resources | P0 | Backend | CORE-02 | 1 | API tests | TESTING (green on SQLite; MySQL CI run pending) | BE |
+| CORE-01 | Auth & RBAC | Users, roles, permissions, JWT, refresh rotation, TOTP, lockout, audit hook | P0 | Backend | PLAT-04 | 2 | Security tests (doc 22 SEC-*) pass | COMPLETED | BE |
+| CORE-02 | Catalogue | Packages, features, occasions, business info + admin CRUD + seeds | P0 | Backend | CORE-01 | 1.5 | API tests; seed matches website prices | COMPLETED | BE |
+| CORE-03 | Pricing engine | Rules (day type, date, promo, group), tax, charges, quote, snapshot | P0 | Backend | CORE-02 | 2 | ≥ 30 unit cases incl. Fri=weekend, holiday override, inclusive/exclusive GST, rounding | COMPLETED | BE |
+| CORE-04 | Schedule config | Hours, exceptions, resources | P0 | Backend | CORE-02 | 1 | API tests | COMPLETED | BE |
 | CORE-05 | TOTP 2FA for OWNER/MANAGER | Enrollment, verification at login, recovery codes | P1 | Backend | CORE-01 | 1 | Login requires TOTP when enabled; tests | BACKLOG | BE |
 | BOOK-01 | Slot grid generator | Materialize slots N days ahead; regenerate on schedule change without touching booked cells | P0 | Booking | CORE-04, D-01 | 1.5 | Tests incl. midnight/IST edges | BACKLOG | BE |
 | BOOK-02 | Availability service | Dates & slots fitting guest count + duration + buffer | P0 | Booking | BOOK-01 | 1.5 | Unit + API tests | BACKLOG | BE |

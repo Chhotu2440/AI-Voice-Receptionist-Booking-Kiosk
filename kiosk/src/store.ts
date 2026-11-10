@@ -14,6 +14,8 @@ interface KioskStore {
   toast: { code: string; message: string; for?: string | null } | null;
   config: KioskConfig;
   socket: KioskSocket | null;
+  camera: { ok: boolean | null; faces: number; present: boolean };
+  setCamera: (c: Partial<KioskStore["camera"]>) => void;
   setSocket: (s: KioskSocket | null) => void;
   setConn: (c: Conn) => void;
   setConfig: (c: KioskConfig) => void;
@@ -28,6 +30,11 @@ export const DEFAULT_CONFIG: KioskConfig = {
   voice_enabled: false,
   volume: 70,
   assistant_name: "Zara",
+  presence_enabled: true,
+  presence_min_face_area: 0.02,
+  presence_dwell_ms: 1500,
+  presence_leave_ms: 15000,
+  presence_debug: false,
 };
 
 export const useKiosk = create<KioskStore>((set, get) => ({
@@ -38,6 +45,8 @@ export const useKiosk = create<KioskStore>((set, get) => ({
   toast: null,
   config: DEFAULT_CONFIG,
   socket: null,
+  camera: { ok: null, faces: 0, present: false },
+  setCamera: (c) => set({ camera: { ...get().camera, ...c } }),
   setSocket: (socket) => set({ socket }),
   setConn: (conn) => set(conn === "online" ? { conn } : { conn, pending: null }),
   setConfig: (config) => set({ config: { ...DEFAULT_CONFIG, ...config } }),

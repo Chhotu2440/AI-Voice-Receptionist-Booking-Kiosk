@@ -32,6 +32,12 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "voice_enabled": False,
     "volume": 70,
     "assistant_name": "Zara",
+    # On-device presence detection (CAM-01); tune per venue from the admin dashboard.
+    "presence_enabled": True,
+    "presence_min_face_area": 0.02,
+    "presence_dwell_ms": 1500,
+    "presence_leave_ms": 15000,
+    "presence_debug": False,
 }
 
 

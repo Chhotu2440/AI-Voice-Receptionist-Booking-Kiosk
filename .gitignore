@@ -32,3 +32,4 @@ kiosk/test-results/
 kiosk/playwright-report/
 kiosk/e2e-results.xml
 *.tsbuildinfo
+kiosk/public/mediapipe/

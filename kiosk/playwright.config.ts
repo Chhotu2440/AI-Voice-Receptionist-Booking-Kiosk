@@ -47,7 +47,7 @@ export default defineConfig({
       timeout: 120_000,
     },
     {
-      command: `npx vite --host 127.0.0.1 --port ${KIOSK_PORT} --strictPort`,
+      command: `node scripts/copy-mediapipe.mjs && npx vite --host 127.0.0.1 --port ${KIOSK_PORT} --strictPort`,
       env: { KIOSK_BACKEND_URL: `http://127.0.0.1:${BACKEND_PORT}` },
       url: `http://127.0.0.1:${KIOSK_PORT}`,
       reuseExistingServer: false,

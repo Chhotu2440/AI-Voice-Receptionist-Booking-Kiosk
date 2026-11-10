@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "./components/ui";
 import { ApiError, deviceToken, heartbeat, loadCreds, saveCreds } from "./lib/api";
 import { KioskSocket } from "./lib/socket";
+import { usePresence } from "./lib/usePresence";
 import { ConfirmedScreen, CancelledScreen, EnquiryDoneScreen, StaffScreen } from "./screens/End";
 import { DateScreen, PackagesScreen, SlotsScreen, SummaryScreen } from "./screens/Booking";
 import { NameScreen, PhoneScreen } from "./screens/Customer";
@@ -64,17 +65,19 @@ function Kiosk({ onUnpaired }: { onUnpaired: () => void }) {
     }
   }, [onUnpaired]);
 
+  const beat = useCallback(async () => {
+    try {
+      const camera = useKiosk.getState().camera.ok;
+      setConfig(await heartbeat(await getToken(), camera === null ? {} : { camera_ok: camera }));
+    } catch {
+      /* offline; the socket shows the reconnecting banner */
+    }
+  }, [getToken, setConfig]);
+
   useEffect(() => {
     const socket = new KioskSocket(getToken, receive, setConn);
     setSocket(socket);
     void socket.connect();
-    const beat = async () => {
-      try {
-        setConfig(await heartbeat(await getToken(), {}));
-      } catch {
-        /* offline; the socket shows the reconnecting banner */
-      }
-    };
     void beat();
     const hb = window.setInterval(() => void beat(), 60_000);
     return () => {
@@ -82,7 +85,13 @@ function Kiosk({ onUnpaired }: { onUnpaired: () => void }) {
       socket.close();
       setSocket(null);
     };
-  }, [getToken, receive, setConn, setSocket, setConfig]);
+  }, [getToken, receive, setConn, setSocket, beat]);
+
+  // Report camera health to the admin dashboard as soon as it changes (not only on the next beat).
+  const cameraOk = useKiosk((s) => s.camera.ok);
+  useEffect(() => {
+    if (cameraOk !== null) void beat();
+  }, [cameraOk, beat]);
 
   // Inactivity: after idle_timeout_s without a touch, ask "still there?", then clear the session (PII).
   const [stillThere, setStillThere] = useState(false);
@@ -98,6 +107,13 @@ function Kiosk({ onUnpaired }: { onUnpaired: () => void }) {
   useEffect(() => {
     lastTouch.current = Date.now();
   }, [version]);
+  // The customer walked away: show "still there?" now and clear the session after the grace period.
+  usePresence(() => {
+    lastTouch.current = Date.now() - idleTimeout * 1000 - 1;
+  });
+  const camera = useKiosk((s) => s.camera);
+  const presenceDebug = useKiosk((s) => s.config.presence_debug);
+
   useEffect(() => {
     const exempt = ["IDLE", "BOOKING_CONFIRMED", "SESSION_COMPLETE", "SESSION_CANCELLED", "STAFF_ASSISTANCE"];
     const id = window.setInterval(() => {
@@ -115,6 +131,11 @@ function Kiosk({ onUnpaired }: { onUnpaired: () => void }) {
   return (
     <div className="relative h-full w-full">
       <Current />
+      {presenceDebug ? (
+        <div data-testid="presence-debug" className="absolute bottom-3 right-3 rounded-full bg-arena-800/90 px-4 py-2 text-lg">
+          cam {camera.ok === null ? "off" : camera.ok ? "ok" : "error"} · faces {camera.faces} · {camera.present ? "present" : "—"}
+        </div>
+      ) : null}
       {conn !== "online" ? (
         <div data-testid="offline" className="absolute inset-x-0 top-0 bg-alert/90 py-3 text-center text-2xl font-semibold text-arena-950">
           {t.offline}

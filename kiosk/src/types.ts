@@ -123,4 +123,9 @@ export interface KioskConfig {
   voice_enabled: boolean;
   volume: number;
   assistant_name: string;
+  presence_enabled: boolean;
+  presence_min_face_area: number;
+  presence_dwell_ms: number;
+  presence_leave_ms: number;
+  presence_debug: boolean;
 }

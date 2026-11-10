@@ -4,6 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "predev": "node scripts/copy-mediapipe.mjs",
+    "prebuild": "node scripts/copy-mediapipe.mjs",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview --port 4173",
@@ -15,6 +17,7 @@
     "@fontsource/inter": "^5.1.0",
     "@fontsource/noto-sans-devanagari": "^5.1.0",
     "@fontsource/orbitron": "^5.1.0",
+    "@mediapipe/tasks-vision": "0.10.35",
     "qrcode.react": "^4.1.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

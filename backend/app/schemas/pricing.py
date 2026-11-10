@@ -9,6 +9,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.schemas.common import ORMModel
+from app.services.pricing_engine import PriceBreakdown
 
 RuleType = Literal["BASE_DAYTYPE", "DATE_OVERRIDE", "DATE_RANGE", "PROMO", "GROUP_DISCOUNT"]
 DayType = Literal["WEEKDAY", "WEEKEND"]
@@ -151,3 +152,28 @@ class PricingRuleOut(ORMModel):
     is_active: bool
     valid_from: datetime | None
     valid_to: datetime | None
+
+
+def quote_out(
+    b: PriceBreakdown, quote_id: str | None = None, expires_at: datetime | None = None
+) -> PriceQuoteOut:
+    return PriceQuoteOut(
+        package_id=b.package_id,
+        date=b.play_date,
+        day_type=b.day_type,
+        guest_count=b.guest_count,
+        price_per_person=b.price_per_person,
+        subtotal=b.subtotal,
+        discounts=[
+            DiscountOut(rule_id=d.rule_id, name=d.name, pct=d.pct, amount=d.amount) for d in b.discounts
+        ],
+        discount_total=b.discount_total,
+        charges=[ChargeOut(code=c.code, label=c.label, amount=c.amount) for c in b.charges],
+        charges_total=b.charges_total,
+        tax=TaxOut(rate=b.tax_rate, amount=b.tax_amount, included=b.prices_include_tax),
+        total=b.total,
+        currency=b.currency,
+        rules_applied=list(b.rules_applied),
+        quote_id=quote_id,
+        quote_expires_at=expires_at,
+    )

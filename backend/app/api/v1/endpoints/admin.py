@@ -10,7 +10,6 @@ from fastapi import APIRouter, Depends, Query, Request, status
 from pydantic import BaseModel
 
 from app.api.deps import CurrentUser, SessionDep, SettingsDep, require_permission, user_actor
-from app.api.v1.endpoints.public import quote_out
 from app.core.exceptions import ForbiddenError
 from app.core.timeutil import today_local
 from app.models.identity import User
@@ -25,6 +24,7 @@ from app.schemas.pricing import (
     PricingRuleCreate,
     PricingRuleOut,
     PricingRuleUpdate,
+    quote_out,
 )
 from app.schemas.schedule import (
     BusinessHoursDay,

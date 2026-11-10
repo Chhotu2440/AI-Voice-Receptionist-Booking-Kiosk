@@ -19,6 +19,7 @@ dependencies = [
     "pyjwt>=2.9",
     "redis>=5.0",
     "tzdata>=2024.1",
+    "arq>=0.26",
 ]
 
 [project.optional-dependencies]
@@ -57,7 +58,7 @@ select = ["E", "F", "W", "I", "B", "UP", "S", "ASYNC", "RUF"]
 ignore = ["S101", "B008", "RUF012"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S105", "S106"]
+"tests/**" = ["S105", "S106", "S311"]
 "migrations/**" = ["E501"]
 
 [tool.mypy]

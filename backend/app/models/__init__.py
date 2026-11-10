@@ -1,14 +1,38 @@
 """Import all models so Base.metadata is complete (used by Alembic and tests)."""
 
 from app.models.audit import AuditLog, SystemSetting
+from app.models.booking import (
+    AvailabilitySlot,
+    Booking,
+    BookingItem,
+    BookingPricingSnapshot,
+    BookingSlot,
+    BookingStatusHistory,
+    Customer,
+    CustomerConsent,
+    CustomEventEnquiry,
+    IdempotencyKey,
+    SlotHold,
+    SlotHoldCell,
+)
 from app.models.catalogue import Occasion, Package, PackageFeature, PackagePricingRule
 from app.models.identity import Permission, RefreshToken, Role, User, role_permissions, user_roles
 from app.models.schedule import BusinessHours, BusinessLocation, Resource, ScheduleException
 
 __all__ = [
     "AuditLog",
+    "AvailabilitySlot",
+    "Booking",
+    "BookingItem",
+    "BookingPricingSnapshot",
+    "BookingSlot",
+    "BookingStatusHistory",
     "BusinessHours",
     "BusinessLocation",
+    "CustomEventEnquiry",
+    "Customer",
+    "CustomerConsent",
+    "IdempotencyKey",
     "Occasion",
     "Package",
     "PackageFeature",
@@ -18,6 +42,8 @@ __all__ = [
     "Resource",
     "Role",
     "ScheduleException",
+    "SlotHold",
+    "SlotHoldCell",
     "SystemSetting",
     "User",
     "role_permissions",

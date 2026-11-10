@@ -25,8 +25,8 @@ Full rationale: [docs/07-architecture-decisions.md](docs/07-architecture-decisio
 
 | ID | Question | Why it matters | Default if unanswered |
 |---|---|---|---|
-| D-01 | Is a booked slot **exclusive to one group**, or can unrelated groups share the arena? | Core capacity model | Exclusive |
-| D-02 | **Max players per game**, min per booking, opening hours, slot interval (30 min?), changeover buffer | Slot generator & guest limits | 16 max, 1 min, 11:00–22:00, 30 min, 10 min (placeholders, **won't go live with these**) |
+| D-01 | ~~Is a booked slot exclusive to one group?~~ **DECIDED 2026-11-10: exclusive per group** (one booking takes the whole arena for its game time + buffer) | Core capacity model | — |
+| D-02 | ~~Max players, hours, interval, buffer~~ **DECIDED 2026-11-10: max 20 players per game, open 11:00–22:00 daily, starts every 30 min, 10 min changeover buffer**. Minimum per booking stays 1 (assumption) | Slot generator & guest limits | — |
 | D-03 | Payment: pay at reception / deposit / full online? | Payment scope | Pay at reception |
 | D-04 | Replace DaySchedule with our web booking page (single calendar)? Share DaySchedule plan + API key for the spike | Integration path | Yes, after spike |
 | D-05 | Are listed prices GST-inclusive? GSTIN? Tax shown on summary? | Pricing display | Inclusive |

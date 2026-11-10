@@ -1,5 +1,5 @@
 # Local development / single-host deployment stack (ADR-011).
-# Services are added as they are implemented: voice-gateway, worker and nginx arrive in later sprints.
+# Services are added as they are implemented: voice-gateway and nginx arrive in later sprints.
 #
 #   cp backend/.env.example backend/.env   # then edit secrets
 #   docker compose up -d --build
@@ -27,6 +27,12 @@ services:
     <<: *api-common
     ports:
       - "127.0.0.1:8000:8000"   # nginx (later) is the only public entry point
+
+  worker:
+    <<: *api-common
+    command: ["arq", "app.workers.settings.WorkerSettings"]
+    healthcheck:
+      disable: true
 
   migrate:
     <<: *api-common

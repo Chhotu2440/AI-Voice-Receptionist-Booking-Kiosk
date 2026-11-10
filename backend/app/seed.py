@@ -2,8 +2,9 @@
 
 * Reference data (always safe): permissions, roles and grants, occasions.
 * Initial catalogue (only into an empty database): venue details and packages/prices as published on
-  playlasertag.in on 2026-11-10, plus PLACEHOLDER hours/resource values (assumptions A-03..A-05) that the
-  business must confirm before go-live (decision D-02). Everything is editable in the admin dashboard.
+  playlasertag.in on 2026-11-10, and the schedule/arena rules confirmed by the owner on 2026-11-10
+  (D-01 exclusive games; D-02 max 20 players, 11:00-22:00, 30-min starts, 10-min buffer).
+  Everything is editable in the admin dashboard.
 """
 
 from __future__ import annotations
@@ -71,8 +72,8 @@ PACKAGES = [
     ("EXPERT", "Expert", 60, None, 5, "600", "650", ["5 game formats"], False),
 ]
 
-PLACEHOLDER_MAX_PLAYERS = 16  # A-03, unconfirmed
-PLACEHOLDER_OPEN, PLACEHOLDER_CLOSE = time(11, 0), time(22, 0)  # A-05, unconfirmed
+MAX_PLAYERS = 20  # D-02, confirmed 2026-11-10
+OPEN_TIME, CLOSE_TIME = time(11, 0), time(22, 0)  # D-02, confirmed 2026-11-10
 
 
 async def seed_reference(session: AsyncSession) -> None:
@@ -131,8 +132,8 @@ async def seed_initial_catalogue(session: AsyncSession) -> bool:
             BusinessHours(
                 location_id=location.id,
                 weekday=weekday,
-                open_time=PLACEHOLDER_OPEN,
-                close_time=PLACEHOLDER_CLOSE,
+                open_time=OPEN_TIME,
+                close_time=CLOSE_TIME,
             )
         )
     session.add(
@@ -141,7 +142,7 @@ async def seed_initial_catalogue(session: AsyncSession) -> bool:
             name="Main Arena",
             capacity_mode="EXCLUSIVE",
             default_capacity=1,
-            max_players=PLACEHOLDER_MAX_PLAYERS,
+            max_players=MAX_PLAYERS,
             slot_interval_min=30,
             buffer_min=10,
         )
@@ -155,7 +156,7 @@ async def seed_initial_catalogue(session: AsyncSession) -> bool:
             games_count=games,
             formats_count=formats,
             min_guests=1,
-            max_guests=PLACEHOLDER_MAX_PLAYERS,
+            max_guests=MAX_PLAYERS,
             is_recommended=rec,
             sort_order=i,
             features=[PackageFeature(text_en=t, sort_order=j) for j, t in enumerate(features)],

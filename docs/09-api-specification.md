@@ -77,6 +77,28 @@ Dashboard (`GET /admin/dashboard?from&to`), packages CRUD, pricing-rules CRUD + 
 
 **Implemented in Sprint 1:** `/admin/packages` (CRUD + soft delete), `/admin/occasions`, `/admin/pricing-rules` (CRUD; DELETE deactivates), `/admin/pricing/preview`, `/admin/settings/{pricing|booking}`, `/admin/business-info`, `/admin/schedule/hours`, `/admin/schedule/exceptions`, `/admin/resources`, `/admin/users`. Public: `/packages`, `/packages/{id}`, `/occasions`, `/business-info`, `/pricing/calculate`.
 
+**Implemented in Sprint 2 (booking engine):**
+| Method | Path | Auth / headers | Notes |
+|---|---|---|---|
+| POST | /availability/slots | public | `{package_id, date, guest_count}` → `{date, status: OPEN/FULL/CLOSED, closed_reason, slots:[{start_time, end_time, start_at, end_at, duration_min, remaining}]}` |
+| GET | /availability/dates | public | `?package_id&guests&from&to` (≤ 31 days, clipped to the booking window) |
+| POST | /slot-holds | public, `Idempotency-Key` | `{package_id, date, start_time:"HH:MM", guest_count}` → 201 `{hold_id, hold_token, expires_at, start/end…}`. 409 SLOT_UNAVAILABLE, 422 DATE_CLOSED / ENQUIRY_REQUIRED / GUEST_COUNT_INVALID |
+| GET | /slot-holds/{id} | `X-Hold-Token` | status, seconds_remaining |
+| POST | /slot-holds/{id}/extend | `X-Hold-Token` | once per hold |
+| DELETE | /slot-holds/{id} | `X-Hold-Token` | idempotent release |
+| POST | /bookings | public, `Idempotency-Key` | `{hold_id, hold_token, customer:{name, phone}, occasion_code, occasion_details, consents:{whatsapp}, quote_id?, notes?}` → 201 booking with `booking_token`. 410 HOLD_EXPIRED, 409 HOLD_NOT_ACTIVE / PRICE_CHANGED / SLOT_UNAVAILABLE, 422 ENQUIRY_REQUIRED |
+| GET | /bookings/{id} | `X-Booking-Token` | customer self-view (phone masked) |
+| POST | /event-enquiries | public, `Idempotency-Key` | → 201 `{reference: ENQ-…}` |
+| GET | /admin/bookings | `booking.read` | filters `from,to,status[],phone,reference`, paginated |
+| GET | /admin/bookings/{id} | `booking.read` | full detail + status history |
+| POST | /admin/slot-holds, /admin/bookings | `booking.write`, `Idempotency-Key` | staff channel, same engine |
+| POST | /admin/bookings/{id}/cancel | `booking.write` | frees capacity |
+| POST | /admin/bookings/{id}/reschedule | `booking.write` | `{hold_id, hold_token, reason}`; same package and group size; re-prices for the new date and records old/new totals in history |
+| POST | /admin/bookings/{id}/status | `booking.write` | COMPLETED / NO_SHOW, only after the start time |
+| GET/PATCH | /admin/enquiries[/{id}] | `enquiry.manage` | status pipeline, staff notes |
+
+Rate limit for booking writes: 10/min/IP (public). Kiosk device authentication (KIOSK-01) will give the kiosk its own channel and limits.
+
 Health: `GET /healthz` (liveness, no deps), `GET /readyz` (DB, Redis, migrations at head).
 
 ## WebSocket contracts

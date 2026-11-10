@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     login_lockout_seconds: int = 15 * 60
     login_rate_limit_per_minute: int = 5
     public_rate_limit_per_minute: int = 30
+    booking_rate_limit_per_minute: int = 10
 
     cors_origins: list[str] = Field(default_factory=list)
     business_timezone: str = "Asia/Kolkata"

@@ -29,6 +29,11 @@ async def get_package(session: AsyncSession, package_id: uuid.UUID) -> Package |
     return (await session.execute(stmt)).scalar_one_or_none()
 
 
+async def get_package_any(session: AsyncSession, package_id: uuid.UUID) -> Package | None:
+    """Including soft-deleted packages (for displaying historical bookings)."""
+    return await session.get(Package, package_id)
+
+
 async def get_package_by_code(session: AsyncSession, code: str) -> Package | None:
     return (await session.execute(select(Package).where(Package.code == code))).scalar_one_or_none()
 

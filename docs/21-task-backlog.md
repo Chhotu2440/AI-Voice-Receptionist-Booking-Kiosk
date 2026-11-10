@@ -8,7 +8,7 @@ Statuses: BACKLOG · READY · IN_PROGRESS · BLOCKED · IN_REVIEW · TESTING · 
 | DISC-02 | Provider research & cost model | Official pricing, comparison | P0 | Discovery | — | 1 | Docs 11, 12 | COMPLETED | PM |
 | DISC-03 | DaySchedule account review | Owner shares plan, configured services, form fields | P0 | Discovery | OWN | 0.5 | Screenshot/access received, doc 13 updated | BLOCKED (owner) | OWN/PM |
 | DISC-04 | DaySchedule API spike | Test availability, multi-seat booking, oversell, webhooks with API key | P0 | Discovery | DISC-03 | 1 | Results recorded; ADR-003 accepted or revised | BLOCKED (API key) | BE |
-| DISC-05 | Business decisions workshop | Close D-01…D-10 | P0 | Discovery | — | 0.5 | Decisions logged in PROJECT_DECISIONS.md | READY | PM/OWN |
+| DISC-05 | Business decisions workshop | Close D-01…D-10 | P0 | Discovery | — | 0.5 | Decisions logged in PROJECT_DECISIONS.md | COMPLETED (D-01, D-02 decided 2026-11-10) | PM/OWN |
 | DISC-06 | Hardware quotes | 3 dated quotes for the budget config | P1 | Discovery | D-08 | 0.5 | Quotes in doc 15 | READY | OWN/PM |
 | PLAT-01 | Repo & tooling | Monorepo layout, ruff, mypy, pytest, pre-commit, ESLint/Prettier | P0 | Platform | DISC-05 | 0.5 | `make check` passes on an empty skeleton | COMPLETED | BE |
 | PLAT-02 | Docker Compose stack | api, voice, worker, mysql 8.4, redis 7, nginx | P0 | Platform | PLAT-01 | 1 | `docker compose up` → /readyz green | IN_REVIEW (image builds in CI; compose stack not yet run) | OPS |
@@ -19,13 +19,13 @@ Statuses: BACKLOG · READY · IN_PROGRESS · BLOCKED · IN_REVIEW · TESTING · 
 | CORE-03 | Pricing engine | Rules (day type, date, promo, group), tax, charges, quote, snapshot | P0 | Backend | CORE-02 | 2 | ≥ 30 unit cases incl. Fri=weekend, holiday override, inclusive/exclusive GST, rounding | COMPLETED | BE |
 | CORE-04 | Schedule config | Hours, exceptions, resources | P0 | Backend | CORE-02 | 1 | API tests | COMPLETED | BE |
 | CORE-05 | TOTP 2FA for OWNER/MANAGER | Enrollment, verification at login, recovery codes | P1 | Backend | CORE-01 | 1 | Login requires TOTP when enabled; tests | BACKLOG | BE |
-| BOOK-01 | Slot grid generator | Materialize slots N days ahead; regenerate on schedule change without touching booked cells | P0 | Booking | CORE-04, D-01 | 1.5 | Tests incl. midnight/IST edges | BACKLOG | BE |
-| BOOK-02 | Availability service | Dates & slots fitting guest count + duration + buffer | P0 | Booking | BOOK-01 | 1.5 | Unit + API tests | BACKLOG | BE |
-| BOOK-03 | Slot holds | Create/extend/release; expiry job; Redis ZSET | P0 | Booking | BOOK-02 | 2 | Hold expiry test; no stale holds after job | BACKLOG | BE |
-| BOOK-04 | Booking transaction | Atomic hold→booking, idempotency, snapshot, history | P0 | Booking | BOOK-03, CORE-03 | 2 | CONC-* tests pass | BACKLOG | BE |
-| BOOK-05 | Concurrency suite | 50-way parallel holds/bookings, kiosk+web, replay | P0 | Booking | BOOK-04 | 1.5 | 0 oversell in 1,000 randomized runs | BACKLOG | BE |
-| BOOK-06 | Cancel / reschedule | Release cells, history, notifications hook | P1 | Booking | BOOK-04 | 1 | API tests | BACKLOG | BE |
-| BOOK-07 | Event enquiries | Create, list, status workflow, staff alert | P1 | Booking | CORE-02 | 1 | API tests | BACKLOG | BE |
+| BOOK-01 | Slot grid generator | Materialize slots N days ahead; regenerate on schedule change without touching booked cells | P0 | Booking | CORE-04, D-01 | 1.5 | Tests incl. midnight/IST edges | TESTING (green locally; CI MySQL run pending) | BE |
+| BOOK-02 | Availability service | Dates & slots fitting guest count + duration + buffer | P0 | Booking | BOOK-01 | 1.5 | Unit + API tests | TESTING (green locally; CI MySQL run pending) | BE |
+| BOOK-03 | Slot holds | Create/extend/release; expiry job; Redis ZSET | P0 | Booking | BOOK-02 | 2 | Hold expiry test; no stale holds after job | TESTING (green locally; CI MySQL run pending) | BE |
+| BOOK-04 | Booking transaction | Atomic hold→booking, idempotency, snapshot, history | P0 | Booking | BOOK-03, CORE-03 | 2 | CONC-* tests pass | TESTING (green locally; CI MySQL run pending) | BE |
+| BOOK-05 | Concurrency suite | 50-way parallel holds/bookings, kiosk+web, replay | P0 | Booking | BOOK-04 | 1.5 | 0 oversell in 1,000 randomized runs | TESTING (written; runs on MySQL in CI) | BE |
+| BOOK-06 | Cancel / reschedule | Release cells, history, notifications hook | P1 | Booking | BOOK-04 | 1 | API tests | TESTING (green locally; CI MySQL run pending) | BE |
+| BOOK-07 | Event enquiries | Create, list, status workflow, staff alert | P1 | Booking | CORE-02 | 1 | API tests | TESTING (green locally; CI MySQL run pending) | BE |
 | KIOSK-01 | Kiosk shell | Vite app, theme, fonts, layout, device pairing/auth | P0 | Frontend | PLAT-02 | 1.5 | Runs fullscreen in Chrome kiosk | BACKLOG | FE |
 | KIOSK-02 | WS state sync | Backend state machine + kiosk WS contract | P0 | Frontend/BE | BOOK-02 | 2 | Contract tests; version ordering | BACKLOG | FE/BE |
 | KIOSK-03 | Screens 1–9 | Idle → package discovery | P0 | Frontend | KIOSK-02 | 2.5 | Component tests | BACKLOG | FE |

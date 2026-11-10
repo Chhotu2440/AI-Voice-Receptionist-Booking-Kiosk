@@ -68,6 +68,58 @@ class PricingNotConfiguredError(DomainError):
     )
 
 
+class SlotUnavailableError(DomainError):
+    status_code, code, default_message = 409, "SLOT_UNAVAILABLE", "Sorry, that time is no longer available."
+
+
+class HoldExpiredError(DomainError):
+    status_code, code, default_message = (
+        410,
+        "HOLD_EXPIRED",
+        "Your reserved slot has expired. Please pick a time again.",
+    )
+
+
+class HoldNotActiveError(DomainError):
+    status_code, code, default_message = 409, "HOLD_NOT_ACTIVE", "That reservation is no longer active."
+
+
+class IdempotencyMismatchError(DomainError):
+    status_code, code, default_message = (
+        409,
+        "IDEMPOTENCY_MISMATCH",
+        "This Idempotency-Key was already used with a different request.",
+    )
+
+
+class RequestInProgressError(DomainError):
+    status_code, code, default_message = (
+        409,
+        "REQUEST_IN_PROGRESS",
+        "This request is already being processed.",
+    )
+
+
+class PriceChangedError(DomainError):
+    status_code, code, default_message = (
+        409,
+        "PRICE_CHANGED",
+        "The price has changed. Please review the new total.",
+    )
+
+
+class EnquiryRequiredError(DomainError):
+    status_code, code, default_message = (
+        422,
+        "ENQUIRY_REQUIRED",
+        "This booking needs our team's help. Please send an event enquiry instead.",
+    )
+
+
+class DateClosedError(DomainError):
+    status_code, code, default_message = 422, "DATE_CLOSED", "We're closed on that date."
+
+
 def _envelope(status: int, code: str, message: str, details: dict[str, Any] | None = None) -> JSONResponse:
     body = {
         "error": {

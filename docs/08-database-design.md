@@ -84,7 +84,13 @@ Global tax and charges live in `system_settings` (`pricing.tax_rate`, `pricing.p
 **idempotency_keys**: `key VARCHAR(64)`, `scope VARCHAR(32)`, `request_hash CHAR(64)`, `response_status`, `response_body JSON`, `expires_at`. **PK `(scope, key)`**.
 
 ## Implementation status
-Sprint 1 (migration `0001`) implements: users, roles, permissions, user_roles, role_permissions, refresh_tokens, packages, package_features, package_pricing_rules, occasions, business_locations, business_hours, schedule_exceptions, resources, audit_logs, system_settings. The remaining tables arrive with their features (Sprint 2: availability_slots, slot_holds, bookings…).
+Sprint 1 (migration `0001`) implements: users, roles, permissions, user_roles, role_permissions, refresh_tokens, packages, package_features, package_pricing_rules, occasions, business_locations, business_hours, schedule_exceptions, resources, audit_logs, system_settings. Sprint 2 (migration `0002`) adds: availability_slots, slot_holds, slot_hold_cells, customers, customer_consents, bookings, booking_slots, booking_items, booking_pricing_snapshots, booking_status_history, custom_event_enquiries, idempotency_keys. The remaining tables arrive with their features (payments, notifications, kiosks, AI usage, webhooks).
+
+**Implementation notes (Sprint 2):**
+- `availability_slots` cells are created **lazily** (insert-if-missing) when a slot is first held, one row per grid interval. Opening hours and exceptions are applied when availability is computed, not stored on cells, so schedule changes need no regeneration. `is_blocked` and `version` were dropped as unnecessary.
+- `slot_holds.booking_id` is indexed but **not unique**, because a reschedule converts a second hold into the same booking. `CONVERTED` status plus the hold row lock prevent double conversion.
+- Hold and booking capability tokens are HMACs of the id (`services/tokens.py`), so no token hashes are stored.
+- `bookings.occasion_details` holds only keys declared in the occasion's `extra_fields_schema`, plus `special_requirements`.
 
 ## Timezone rules
 1. The API accepts and returns local dates as `YYYY-MM-DD` and times as ISO-8601 with `+05:30`.

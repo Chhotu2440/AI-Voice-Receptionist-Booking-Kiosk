@@ -84,7 +84,7 @@ async def test_calculate_validation_errors(client: AsyncClient) -> None:
 
     r = await client.post(
         "/api/v1/pricing/calculate",
-        json={"package_id": pid, "date": today_local().isoformat(), "guest_count": 17},
+        json={"package_id": pid, "date": today_local().isoformat(), "guest_count": 21},
     )
     assert r.status_code == 422 and r.json()["error"]["code"] == "GUEST_COUNT_INVALID"
 

@@ -1,7 +1,8 @@
 """Business information, opening hours, schedule exceptions and resources.
 
-Note: slot generation (Sprint 2) consumes these. Changing hours/exceptions will trigger slot regeneration
-for affected dates once the slot grid exists; booked slots are never modified by configuration changes.
+Hours and exceptions are applied when availability is computed (see slot_engine), so changing them
+needs no slot regeneration. Existing bookings are never modified by configuration changes; staff must
+move or cancel bookings that fall inside a newly added block.
 """
 
 from __future__ import annotations
@@ -13,8 +14,10 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import NotFoundError, ValidationFailed
+from app.core.exceptions import ConflictError, NotFoundError, ValidationFailed
+from app.core.timeutil import utcnow
 from app.models.schedule import BusinessHours, BusinessLocation, Resource, ScheduleException
+from app.repositories import booking as booking_repo
 from app.repositories import schedule as schedule_repo
 from app.schemas.schedule import (
     BusinessHoursPut,
@@ -25,6 +28,7 @@ from app.schemas.schedule import (
 )
 from app.services import audit_service
 from app.services.context import Actor
+from app.services.slot_engine import DaySchedule, ExceptionView, HoursView, build_day_schedule
 
 MAX_EXCEPTION_RANGE_DAYS = 400
 
@@ -34,6 +38,44 @@ async def primary_location(session: AsyncSession) -> BusinessLocation:
     if location is None:
         raise NotFoundError("Business location is not configured. Run the seed command.")
     return location
+
+
+async def primary_resource(session: AsyncSession) -> Resource:
+    """Single-arena venue (D-01): the first active resource is the bookable arena."""
+    location = await primary_location(session)
+    for resource in await schedule_repo.list_resources(session, location.id):
+        if resource.is_active:
+            return resource
+    raise NotFoundError("No active arena is configured.")
+
+
+def resource_capacity(resource: Resource) -> int:
+    return resource.default_capacity if resource.capacity_mode == "EXCLUSIVE" else resource.max_players
+
+
+def units_for(resource: Resource, guest_count: int) -> int:
+    return 1 if resource.capacity_mode == "EXCLUSIVE" else guest_count
+
+
+async def day_schedules(
+    session: AsyncSession, resource: Resource, date_from: date, date_to: date
+) -> dict[date, DaySchedule]:
+    hours = {h.weekday: h for h in await schedule_repo.get_hours(session, resource.location_id)}
+    exceptions = await schedule_repo.list_exceptions(session, resource.location_id, date_from, date_to)
+    by_date: dict[date, list[ExceptionView]] = {}
+    for e in exceptions:
+        if e.resource_id is None or e.resource_id == resource.id:
+            by_date.setdefault(e.exception_date, []).append(
+                ExceptionView(e.type, e.start_time, e.end_time, e.reason)
+            )
+    result: dict[date, DaySchedule] = {}
+    d = date_from
+    while d <= date_to:
+        h = hours.get(d.weekday())
+        view = HoursView(h.open_time, h.close_time, h.is_closed) if h is not None else None
+        result[d] = build_day_schedule(view, by_date.get(d, []))
+        d += timedelta(days=1)
+    return result
 
 
 async def get_hours(session: AsyncSession) -> Sequence[BusinessHours]:
@@ -152,11 +194,19 @@ async def update_resource(
     if row is None:
         raise NotFoundError("Resource not found.")
     before = _resource_snapshot(row)
-    for key, value in data.model_dump(exclude_unset=True).items():
+    patch = data.model_dump(exclude_unset=True)
+    grid_change = any(k in patch and patch[k] != before[k] for k in ("slot_interval_min", "capacity_mode"))
+    if grid_change and await booking_repo.count_future_commitments(session, row.id, utcnow()) > 0:
+        raise ConflictError(
+            "The slot interval or capacity mode can't change while future bookings or holds exist."
+        )
+    for key, value in patch.items():
         setattr(row, key, value)
-    audit_service.record(
-        session, actor, "resource.update", "resource", row.id, before, _resource_snapshot(row)
-    )
+    unresized = 0
+    if before != _resource_snapshot(row):
+        unresized = await booking_repo.resize_future_cells(session, row.id, utcnow(), resource_capacity(row))
+    after = {**_resource_snapshot(row), "cells_not_resized": unresized}
+    audit_service.record(session, actor, "resource.update", "resource", row.id, before, after)
     await session.commit()
     return row
 

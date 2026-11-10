@@ -38,3 +38,9 @@ Full rationale: [docs/07-architecture-decisions.md](docs/07-architecture-decisio
 | D-11 | Are paintball / zorbing / bull ride offered at this venue and bookable? | Scope | Out of scope |
 | D-12 | Is "weekend" Fri–Sun (as on website) or Sat–Sun? | Pricing | Fri–Sun |
 | D-13 | Assistant name/persona (e.g. "Zara") and voice gender preference | Branding | "Zara", provider default voice |
+
+## Repository decisions
+
+| ID | Decision | Date | Implications |
+|---|---|---|---|
+| D-REPO-01 | GitHub repository `Chhotu2440/AI-Voice-Receptionist-Booking-Kiosk` stays **public** (owner's decision) | 2026-11-10 | Docs, pricing notes and business assumptions are publicly readable. Secrets must never be committed: use `.env` (git-ignored) and GitHub Actions secrets only. CI logs are visible only to signed-in users. Real customer data and production configuration never go in the repo. |

@@ -35,8 +35,8 @@ jobs:
       APP_ENV: test
       JWT_SECRET: ci-only-secret-0123456789-0123456789-abcdef
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
@@ -55,15 +55,24 @@ jobs:
         env:
           TEST_DATABASE_URL: mysql+asyncmy://root:root@127.0.0.1:3306/plt_test
         run: pytest -q
-      - name: Migrations on MySQL (upgrade, drift check, downgrade, upgrade)
-        env:
-          DATABASE_URL: mysql+asyncmy://root:root@127.0.0.1:3306/plt_migrate
+      # Migration checks are separate steps so the failing one is visible in the run summary.
+      - name: "Migrations: create database"
+        run: mysql -h 127.0.0.1 -uroot -proot -e "CREATE DATABASE plt_migrate CHARACTER SET utf8mb4"
+      - name: "Migrations: upgrade head"
+        env: { DATABASE_URL: "mysql+asyncmy://root:root@127.0.0.1:3306/plt_migrate" }
         run: |
-          mysql -h 127.0.0.1 -uroot -proot -e "CREATE DATABASE plt_migrate CHARACTER SET utf8mb4"
-          alembic upgrade head
-          alembic check
-          alembic downgrade base
-          alembic upgrade head
+          set -o pipefail
+          alembic upgrade head 2>&1 | tail -40 | sed "s/^/    /" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: "Migrations: drift check (models vs MySQL schema)"
+        env: { DATABASE_URL: "mysql+asyncmy://root:root@127.0.0.1:3306/plt_migrate" }
+        run: |
+          set -o pipefail
+          alembic check 2>&1 | tail -40 | sed 's/^/    /' | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: "Migrations: downgrade base, then upgrade head"
+        env: { DATABASE_URL: "mysql+asyncmy://root:root@127.0.0.1:3306/plt_migrate" }
+        run: |
+          set -o pipefail
+          { alembic downgrade base && alembic upgrade head; } 2>&1 | tail -40 | sed 's/^/    /' | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Security scans
         run: |
           bandit -q -r app -ll
@@ -73,7 +82,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: test
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Build image
         run: docker build -t plt-backend:${{ github.sha }} .
       - name: Trivy scan

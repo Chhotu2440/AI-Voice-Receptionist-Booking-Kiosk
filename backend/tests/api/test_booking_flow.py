@@ -9,7 +9,7 @@ from typing import Any
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.config import Settings
@@ -400,7 +400,7 @@ async def test_capacity_check_constraint_is_enforced(
     async with maker() as s:
         cell = (await s.execute(select(AvailabilitySlot).limit(1))).scalar_one()
         cell.booked_qty = cell.capacity  # held 1 + booked 1 > capacity 1
-        with pytest.raises(IntegrityError):
+        with pytest.raises(DBAPIError):  # IntegrityError on SQLite, OperationalError 3819 on MySQL
             await s.commit()
 
 

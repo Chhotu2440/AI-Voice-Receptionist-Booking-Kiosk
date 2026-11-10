@@ -27,7 +27,24 @@ from app.models.booking import (
 async def ensure_cells(
     session: AsyncSession, resource_id: uuid.UUID, starts: Sequence[datetime], capacity: int
 ) -> None:
-    """Create missing cells (no-op for existing ones). Run in its own short transaction before locking."""
+    """Create missing cells (no-op for existing ones). Run in its own short transaction before locking.
+
+    Only cells that don't exist yet are inserted, so the common case (cells already there) takes no
+    insert locks at all; concurrent first-time inserts can deadlock on MySQL and are retried by the caller."""
+    if not starts:
+        return
+    existing = set(
+        (
+            await session.execute(
+                select(AvailabilitySlot.start_at).where(
+                    AvailabilitySlot.resource_id == resource_id, AvailabilitySlot.start_at.in_(list(starts))
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    starts = sorted(s for s in starts if s not in existing)
     if not starts:
         return
     rows = [

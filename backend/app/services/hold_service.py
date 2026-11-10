@@ -145,8 +145,12 @@ async def create_hold(
 
     units = schedule_service.units_for(resource, data.guest_count)
     capacity = schedule_service.resource_capacity(resource)
-    await booking_repo.ensure_cells(session, resource.id, candidate.cells, capacity)
-    await session.commit()
+
+    async def create_cells() -> None:
+        await booking_repo.ensure_cells(session, resource.id, candidate.cells, capacity)
+        await session.commit()
+
+    await run_with_retry(session, create_cells)
 
     payload = {**data.model_dump(mode="json"), "channel": channel}
 

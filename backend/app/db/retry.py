@@ -10,9 +10,12 @@ from collections.abc import Awaitable, Callable
 from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import SlotUnavailableError
+
 log = logging.getLogger(__name__)
 
 RETRYABLE_MYSQL_CODES = {1205, 1213}  # lock wait timeout, deadlock
+# Note: MySQL reports CHECK violations (e.g. capacity) as error 3819 (OperationalError); never retried.
 
 
 def _is_retryable(exc: DBAPIError) -> bool:
@@ -40,6 +43,9 @@ async def run_with_retry[T](
                 raise
         except DBAPIError as exc:
             await session.rollback()
+            if "ck_availability_slots_capacity" in str(exc.orig):
+                # Last-line oversell guard fired (MySQL 3819): report as an unavailable slot, not a 500.
+                raise SlotUnavailableError() from exc
             if not _is_retryable(exc) or attempt == attempts:
                 raise
             log.warning("db_retry", extra={"attempt": attempt, "error_code": exc.orig.args[0]})  # type: ignore[union-attr]

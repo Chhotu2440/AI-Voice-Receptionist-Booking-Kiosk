@@ -50,11 +50,17 @@ jobs:
       - name: Type-check
         run: mypy app
       - name: Tests (SQLite)
-        run: pytest -q
-      - name: Tests (MySQL 8.4)
+        run: pytest -q --junitxml=junit-sqlite.xml
+      - name: Report SQLite failures
+        if: failure()
+        run: python ../.github/scripts/junit_annotations.py junit-sqlite.xml
+      - name: Tests (MySQL 8.4, incl. concurrency suite)
         env:
           TEST_DATABASE_URL: mysql+asyncmy://root:root@127.0.0.1:3306/plt_test
-        run: pytest -q
+        run: pytest -q --junitxml=junit-mysql.xml
+      - name: Report MySQL failures
+        if: failure()
+        run: python ../.github/scripts/junit_annotations.py junit-mysql.xml
       # Migration checks are separate steps so the failing one is visible in the run summary.
       - name: "Migrations: create database"
         run: mysql -h 127.0.0.1 -uroot -proot -e "CREATE DATABASE plt_migrate CHARACTER SET utf8mb4"

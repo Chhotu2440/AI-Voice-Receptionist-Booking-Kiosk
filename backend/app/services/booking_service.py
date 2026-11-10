@@ -272,12 +272,14 @@ async def create_booking(
         raise EnquiryRequiredError("Corporate and school events are handled by our team as an enquiry.")
     details = validate_details(occasion, data.occasion_details)
     payload = data.model_dump(mode="json") | {"channel": channel}
+    occasion_code = occasion.code  # plain value: a retried transaction expires ORM objects
 
     async def work() -> tuple[int, dict[str, Any]]:
         key_row, replay = await idempotency.begin(session, "booking", idempotency_key, payload)
         if replay is not None:
             return replay.status_code, replay.body
         assert key_row is not None
+        occasion = await _occasion(session, occasion_code)
 
         hold = await booking_repo.lock_hold(session, data.hold_id)
         if hold is None or not verify_token(settings, "hold", data.hold_id, data.hold_token):

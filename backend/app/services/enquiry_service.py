@@ -58,12 +58,15 @@ async def create(
             "The preferred date can't be in the past.", details={"field": "preferred_date"}
         )
     payload = data.model_dump(mode="json") | {"channel": channel}
+    occasion_id = occasion.id  # plain value: a retried transaction expires ORM objects
 
     async def work() -> tuple[int, dict[str, Any]]:
         key_row, replay = await idempotency.begin(session, "enquiry", idempotency_key, payload)
         if replay is not None:
             return replay.status_code, replay.body
         assert key_row is not None
+        occasion = await session.get(Occasion, occasion_id)
+        assert occasion is not None
         customer = await customer_service.upsert(session, data.customer.name, data.customer.phone)
         customer_service.record_consent(
             session, customer, "WHATSAPP_TRANSACTIONAL", data.consents.whatsapp, channel
@@ -71,7 +74,7 @@ async def create(
         enquiry = CustomEventEnquiry(
             reference=new_reference("ENQ"),
             customer=customer,
-            occasion_id=occasion.id,
+            occasion_id=occasion_id,
             guest_count=data.guest_count,
             preferred_date=data.preferred_date,
             details=details,

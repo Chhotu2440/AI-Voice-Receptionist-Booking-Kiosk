@@ -145,9 +145,12 @@ async def create_hold(
 
     units = schedule_service.units_for(resource, data.guest_count)
     capacity = schedule_service.resource_capacity(resource)
+    # Plain values only below: a retried transaction rolls back and expires ORM objects loaded earlier.
+    resource_id, package_id = resource.id, package.id
+    hold_ttl = booking_settings.hold_ttl_seconds
 
     async def create_cells() -> None:
-        await booking_repo.ensure_cells(session, resource.id, candidate.cells, capacity)
+        await booking_repo.ensure_cells(session, resource_id, candidate.cells, capacity)
         await session.commit()
 
     await run_with_retry(session, create_cells)
@@ -160,7 +163,7 @@ async def create_hold(
             return replay.status_code, replay.body
         assert key_row is not None
         now = utcnow()
-        cells = await booking_repo.lock_cells(session, resource.id, candidate.cells)
+        cells = await booking_repo.lock_cells(session, resource_id, candidate.cells)
         if len(cells) != len(candidate.cells):
             raise SlotUnavailableError()
 
@@ -173,8 +176,8 @@ async def create_hold(
         for cell in cells:
             cell.held_qty += units
         hold = SlotHold(
-            resource_id=resource.id,
-            package_id=package.id,
+            resource_id=resource_id,
+            package_id=package_id,
             guest_count=data.guest_count,
             units=units,
             business_date=data.date,
@@ -182,7 +185,7 @@ async def create_hold(
             end_at=candidate.end_at,
             status="ACTIVE",
             channel=channel,
-            expires_at=now + timedelta(seconds=booking_settings.hold_ttl_seconds),
+            expires_at=now + timedelta(seconds=hold_ttl),
             created_by_user_id=created_by,
             cells=[SlotHoldCell(slot_id=c.id) for c in cells],
         )

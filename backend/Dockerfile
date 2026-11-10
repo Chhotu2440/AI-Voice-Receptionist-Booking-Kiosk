@@ -8,6 +8,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# Apply Debian security updates at build time (base images lag behind fixes, e.g. zlib CVEs found by Trivy).
+RUN apt-get update     && apt-get upgrade -y --no-install-recommends     && rm -rf /var/lib/apt/lists/*
+
 # Dependencies first for layer caching.
 COPY pyproject.toml ./
 RUN python - <<'EOF' > /tmp/requirements.txt

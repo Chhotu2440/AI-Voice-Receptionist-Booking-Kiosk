@@ -1,0 +1,75 @@
+# Local development / single-host deployment stack (ADR-011).
+# Services are added as they are implemented: voice-gateway, worker and nginx arrive in later sprints.
+#
+#   cp backend/.env.example backend/.env   # then edit secrets
+#   docker compose up -d --build
+#   docker compose run --rm migrate
+#   docker compose run --rm api python -m app.cli seed --with-catalogue
+#   docker compose run --rm api python -m app.cli create-owner --email you@example.com --name "You"
+
+name: playlasertag
+
+x-api-common: &api-common
+  build: ./backend
+  env_file: ./backend/.env
+  depends_on:
+    mysql:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "5" }
+
+services:
+  api:
+    <<: *api-common
+    ports:
+      - "127.0.0.1:8000:8000"   # nginx (later) is the only public entry point
+
+  migrate:
+    <<: *api-common
+    restart: "no"
+    profiles: ["tools"]
+    command: ["alembic", "upgrade", "head"]
+
+  mysql:
+    image: mysql:8.4
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --default-time-zone=+00:00
+      - --log-bin=mysql-bin
+      - --binlog-expire-logs-seconds=604800
+    env_file: ./backend/.env   # provides MYSQL_PASSWORD and MYSQL_ROOT_PASSWORD
+    environment:
+      MYSQL_DATABASE: playlasertag
+      MYSQL_USER: plt
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes", "--save", "60", "1000"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  mysql-data:
+  redis-data:

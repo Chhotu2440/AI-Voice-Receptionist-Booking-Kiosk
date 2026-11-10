@@ -90,5 +90,14 @@ jobs:
         with:
           image-ref: plt-backend:${{ github.sha }}
           severity: CRITICAL,HIGH
-          exit-code: "1"
           ignore-unfixed: true
+          format: table
+          output: trivy.txt
+          exit-code: "1"
+      - name: Publish Trivy report
+        if: always()
+        run: |
+          echo '### Trivy (CRITICAL/HIGH, fixable)' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          (cat trivy.txt 2>/dev/null || echo "no report produced") | head -150 >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"

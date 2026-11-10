@@ -35,8 +35,9 @@
   - Inactivity "still there?" prompt, then reset.
   - Offline banner.
 
-### Bug found by E2E and fixed
-- A tap on "Tap to start" before the first WebSocket state arrived was silently dropped. The button now stays disabled until the kiosk is connected.
+### Bugs found by testing and fixed
+- **E2E: lost first tap.** A tap on "Tap to start" before the first WebSocket state arrived was silently dropped. The button now stays disabled until the kiosk is connected.
+- **MySQL CI: idempotency keys too long.** The kiosk's internal idempotency keys exceeded the 64-character column. SQLite doesn't enforce lengths, so only MySQL caught it. Keys are now hashed, and a length guard makes SQLite tests fail on this too.
 
 ### Test results
 | Suite | Result |
@@ -45,7 +46,7 @@
 | Backend concurrency suite (MySQL, CI) | ✅ (Sprint 2), re-run in CI |
 | Kiosk unit tests (vitest) | ✅ |
 | Kiosk E2E (Playwright, local Chrome) | ✅ 4/4 |
-| CI | see latest runs: `backend` and `kiosk` workflows |
+| CI at `51240ac`: `backend` (MySQL 8.4, concurrency, migrations, Trivy) and `kiosk` (typecheck, vitest, build, Playwright E2E) | ✅ both green |
 
 ### Not yet verified / known gaps
 - Service-worker offline shell and a frozen-UI watchdog (rest of KIOSK-06).

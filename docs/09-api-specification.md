@@ -99,6 +99,19 @@ Dashboard (`GET /admin/dashboard?from&to`), packages CRUD, pricing-rules CRUD + 
 
 Rate limit for booking writes: 10/min/IP (public). Kiosk device authentication (KIOSK-01) will give the kiosk its own channel and limits.
 
+**Implemented in Sprint 3 (kiosk):**
+| Method | Path | Auth | Notes |
+|---|---|---|---|
+| POST | /admin/kiosks | `kiosk.manage` | `{name}` → device + one-time pairing code `XXXX-XXXX` (15 min) |
+| POST | /admin/kiosks/{id}/pairing-code | `kiosk.manage` | re-pair (rotates the device secret when redeemed) |
+| GET/PATCH | /admin/kiosks[/{id}] | `kiosk.manage` | status (ACTIVE/DISABLED), config, online/heartbeat/version |
+| POST | /kiosk/register | public, rate limited | `{pairing_code}` → `{device_id, device_secret}` |
+| POST | /kiosk/token | public, rate limited | `{device_id, device_secret}` → 1-hour device JWT (`typ=device`) |
+| POST | /kiosk/heartbeat | device JWT | `{app_version, camera_ok…}` → kiosk config |
+| WS | /ws/kiosk | device JWT in first frame | intents → full state snapshots (protocol in `app/websocket/kiosk_ws.py`) |
+
+Kiosk intents: `start, continue, set_name, set_phone, confirm_phone, set_guests, set_occasion, submit_enquiry, select_package, select_date, select_slot, set_consent, extend_hold, confirm_booking, finish, back, edit{field}, staff_assist, staff_resume, cancel, reset, set_language`. The server rejects intents that aren't allowed in the current state (`INVALID_STATE_TRANSITION`).
+
 Health: `GET /healthz` (liveness, no deps), `GET /readyz` (DB, Redis, migrations at head).
 
 ## WebSocket contracts

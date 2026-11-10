@@ -1,8 +1,67 @@
 # Project Status
 
-**Updated:** 2026-11-10 · **Phase:** 3, Booking engine (Sprint 2 complete) · **Overall:** 🟢 On track. CI fully green (run #11)
+**Updated:** 2026-11-10 · **Phase:** 4, Kiosk frontend (Sprint 3 complete) · **Overall:** 🟢 On track
 
-## Sprint 2 PM report: booking engine
+## Sprint 3 PM report: kiosk touch frontend
+**Goal:** a customer can complete a booking at the kiosk by touch alone, with the backend owning the flow. **Result:** done. A full touch booking runs end to end in Playwright against the real backend, and was checked by hand in the browser (EN and HI).
+
+### Completed
+- **KIOSK-01 Kiosk shell and device auth.**
+  - Pairing: admin creates a kiosk and gets a one-time `XXXX-XXXX` code. The kiosk redeems it for a device secret, then exchanges the secret for 1-hour device JWTs.
+  - Admin controls: heartbeat (online, version, health) and disable.
+  - App: React + TS + Vite + Tailwind + Zustand, dark neon theme, 1920×1080 landscape, fonts bundled locally.
+- **KIOSK-02 Backend-owned state machine + `/ws/kiosk`.**
+  - Every touch is an intent, validated against the current state. Steps can't be skipped (SM-001).
+  - Edits and "back" invalidate dependent choices and release the hold (SM-002).
+  - Every exit path releases the slot.
+  - Corporate/school events and groups over 20 are routed to enquiries.
+  - The device token goes in the first WebSocket frame, never in the URL.
+  - State lives in Redis (prod) or in memory (dev).
+- **KIOSK-03/04 Screens.**
+  - Customer details: idle/attract, greeting, name (on-screen keyboard), phone (keypad + read-back).
+  - Group: guests (chips + stepper), occasion tiles, custom event enquiry.
+  - Booking: packages with today's price and estimated total, 14-day date strip with OPEN/FULL/CLOSED, time grid, summary (edit any detail, hold countdown + extend, WhatsApp consent, price breakdown with GST).
+  - End: confirmation with reference + QR, enquiry done, staff assistance, cancelled.
+  - English / हिंदी switch.
+- **KIOSK-05 Playwright E2E** (touch events, 1920×1080):
+  - touch booking verified in the backend (channel KIOSK)
+  - reload mid-booking clears customer data
+  - corporate enquiry
+  - Hindi switch
+- **KIOSK-06 (partial) Resilience.**
+  - No customer data in browser storage.
+  - A reload or crash goes back to idle and the server ends the old session and frees its slot.
+  - A brief network drop resumes the same session.
+  - Inactivity "still there?" prompt, then reset.
+  - Offline banner.
+
+### Bug found by E2E and fixed
+- A tap on "Tap to start" before the first WebSocket state arrived was silently dropped. The button now stays disabled until the kiosk is connected.
+
+### Test results
+| Suite | Result |
+|---|---|
+| Backend (local SQLite): 148 tests incl. 17 kiosk pairing/state machine/WebSocket tests | ✅ |
+| Backend concurrency suite (MySQL, CI) | ✅ (Sprint 2), re-run in CI |
+| Kiosk unit tests (vitest) | ✅ |
+| Kiosk E2E (Playwright, local Chrome) | ✅ 4/4 |
+| CI | see latest runs: `backend` and `kiosk` workflows |
+
+### Not yet verified / known gaps
+- Service-worker offline shell and a frozen-UI watchdog (rest of KIOSK-06).
+- Real kiosk hardware: touch monitor, camera, Chrome kiosk mode (REL-04/05). Presence detection is Sprint 4 (CAM-01/02).
+- Staff "take over" uses on-screen Continue / Start over. A staff PIN is not implemented yet.
+- Docker Compose stack still not run on a host.
+
+### Waiting on business
+- DISC-03/04 DaySchedule access, D-03 payment model, D-05 GST inclusive?, D-06 WhatsApp number, D-08 hardware tier (screen size/orientation: the UI is built for 1080p landscape).
+
+## Next milestone
+**Sprint 4: presence detection (MediaPipe, on-device) + voice provider bake-off** (VOICE-01), then the voice agent wired to these same intents.
+
+---
+
+## Previous: Sprint 2 PM report: booking engine
 **Goal:** authoritative availability, slot holds and atomic bookings with no oversell, proven on MySQL. **Result:** done. All tests, including the concurrency suite, pass on MySQL 8.4 in CI.
 
 ### Business decisions received (2026-11-10)
@@ -59,5 +118,5 @@ Total: 137 tests (131 local + 6 MySQL-only).
 - DISC-03/04: DaySchedule account details and API key, needed for the migration and import (INT-03).
 - D-03 payment model (default: pay at venue), D-05 GST inclusive?, D-06 WhatsApp Business number and Meta account.
 
-## Next milestone
+### Sprint 2's next milestone (now done)
 **Sprint 3: Kiosk frontend (touch).** React + Vite + Tailwind kiosk shell, device pairing and auth, WebSocket state machine, screens 1–9, then the full touch booking end to end (Playwright).

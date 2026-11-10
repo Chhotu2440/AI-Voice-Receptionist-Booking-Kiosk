@@ -26,12 +26,12 @@ Statuses: BACKLOG · READY · IN_PROGRESS · BLOCKED · IN_REVIEW · TESTING · 
 | BOOK-05 | Concurrency suite | 50-way parallel holds/bookings, kiosk+web, replay | P0 | Booking | BOOK-04 | 1.5 | 0 oversell in 1,000 randomized runs | COMPLETED | BE |
 | BOOK-06 | Cancel / reschedule | Release cells, history, notifications hook | P1 | Booking | BOOK-04 | 1 | API tests | COMPLETED | BE |
 | BOOK-07 | Event enquiries | Create, list, status workflow, staff alert | P1 | Booking | CORE-02 | 1 | API tests | COMPLETED | BE |
-| KIOSK-01 | Kiosk shell | Vite app, theme, fonts, layout, device pairing/auth | P0 | Frontend | PLAT-02 | 1.5 | Runs fullscreen in Chrome kiosk | BACKLOG | FE |
-| KIOSK-02 | WS state sync | Backend state machine + kiosk WS contract | P0 | Frontend/BE | BOOK-02 | 2 | Contract tests; version ordering | BACKLOG | FE/BE |
-| KIOSK-03 | Screens 1–9 | Idle → package discovery | P0 | Frontend | KIOSK-02 | 2.5 | Component tests | BACKLOG | FE |
-| KIOSK-04 | Screens 10–18 | Date → reset, hold countdown, errors | P0 | Frontend | KIOSK-03 | 2.5 | Component tests | BACKLOG | FE |
-| KIOSK-05 | Touch-only E2E | Playwright booking happy + edge paths | P0 | QA | KIOSK-04 | 1 | E2E-* pass | BACKLOG | FE |
-| KIOSK-06 | Resilience | Watchdog, offline shell, reset on boot, no persistence | P0 | Frontend | KIOSK-04 | 1 | REL-* tests pass | BACKLOG | FE |
+| KIOSK-01 | Kiosk shell | Vite app, theme, fonts, layout, device pairing/auth | P0 | Frontend | PLAT-02 | 1.5 | Runs fullscreen in Chrome kiosk | COMPLETED | FE |
+| KIOSK-02 | WS state sync | Backend state machine + kiosk WS contract | P0 | Frontend/BE | BOOK-02 | 2 | Contract tests; version ordering | COMPLETED | FE/BE |
+| KIOSK-03 | Screens 1–9 | Idle → package discovery | P0 | Frontend | KIOSK-02 | 2.5 | Component tests | COMPLETED | FE |
+| KIOSK-04 | Screens 10–18 | Date → reset, hold countdown, errors | P0 | Frontend | KIOSK-03 | 2.5 | Component tests | COMPLETED | FE |
+| KIOSK-05 | Touch-only E2E | Playwright booking happy + edge paths | P0 | QA | KIOSK-04 | 1 | E2E-* pass | COMPLETED | FE |
+| KIOSK-06 | Resilience | Watchdog, offline shell, reset on boot, no persistence | P0 | Frontend | KIOSK-04 | 1 | REL-* tests pass | IN_PROGRESS (done: no PII persistence, reload→idle, reconnect/resume, inactivity reset, offline banner; pending: service-worker offline shell, frozen-UI watchdog) | FE |
 | CAM-01 | Presence detection | MediaPipe face detector, thresholds, events | P1 | Frontend | KIOSK-01 | 1.5 | Presence protocol: ≥ 95% true starts, ≤ 1 false start/hour | BACKLOG | FE |
 | CAM-02 | Camera health & fallback | Errors → manual start + alert | P1 | Frontend | CAM-01 | 0.5 | Unplug test | BACKLOG | FE |
 | VOICE-01 | Provider bake-off | Harness, eval set recording, both adapters (minimal), scorecard | P0 | Voice | KIOSK-02, hardware | 4 | Scorecard; ADR-007 accepted | BACKLOG | VO |

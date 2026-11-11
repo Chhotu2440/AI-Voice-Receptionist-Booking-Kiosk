@@ -12,7 +12,7 @@ Full rationale: [docs/07-architecture-decisions.md](docs/07-architecture-decisio
 | ADR-004 | Modular monolith, 3 processes (api / voice-gateway / worker) | **Accepted 2026-11-10** |
 | ADR-005 | Voice audio relayed through backend (no provider keys or protocols in browser) | **Accepted 2026-11-10** |
 | ADR-006 | Async SQLAlchemy + asyncmy | **Accepted 2026-11-10** |
-| ADR-007 ★ | Voice provider chosen by measured bake-off; primary candidate OpenAI `gpt-realtime-2.1-mini`, challenger Gemini 3.8 Live, fallback cascaded Sarvam | **Accepted 2026-11-10** |
+| ADR-007 ★ | Voice provider chosen by measured bake-off; primary candidate OpenAI `gpt-realtime-2.1-mini`, challenger Gemini 3.8 Live, fallback cascaded Sarvam | **Accepted 2026-11-10**. **Update 2026-11-11:** after bake-off round 1 (docs/11 §5), **Gemini `gemini-3.8-live` is the default** for round 2 (owner's choice). OpenAI stays as a switchable fallback via `VOICE_PROVIDER`. Final choice after round 2 with human speakers. |
 | ADR-008 | ARQ for background jobs | **Accepted 2026-11-10** |
 | ADR-009 | MediaPipe face *detection* in browser; no recognition | **Accepted 2026-11-10** |
 | ADR-010 | JWT + RBAC for admin; device credentials for kiosks | **Accepted 2026-11-10** |

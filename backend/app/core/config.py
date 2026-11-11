@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     booking_rate_limit_per_minute: int = 10
 
     # --- voice (ADR-005/007): provider keys stay on the server; the kiosk never sees them ---
-    voice_provider: Literal["openai", "gemini", "scripted"] = "openai"
+    voice_provider: Literal["openai", "gemini", "scripted"] = "gemini"
     openai_api_key: SecretStr | None = None
     openai_realtime_model: str = "gpt-realtime-2.1-mini"
     openai_voice: str = "marin"

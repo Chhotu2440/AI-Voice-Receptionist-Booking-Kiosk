@@ -36,6 +36,35 @@ ElevenLabs Conversational AI, Deepgram Voice Agent, Azure OpenAI Realtime (same 
 - Metrics and weights: Hinglish/Hindi task success 30%, phone number exact-match 15%, TTFA p50/p95 15%, tool-call validity 15%, barge-in stop time 5%, voice naturalness (staff MOS 1–5) 10%, **actual billed cost per completed booking** 10%.
 - Decision rule: the highest weighted score wins. Any candidate with an invented-fact rate above 0 after prompt tuning, or phone exact-match below 95% (after read-back), is disqualified.
 
+## 5. Bake-off round 1 results (2026-11-11, live APIs)
+
+**Method:** `backend/scripts/voice_bakeoff.py`. Identical synthesized customer speech (OpenAI TTS, Indian-accent prompt) is streamed in real time into each provider. The real tools run against a throwaway booking database. There are two scripts (English, Hinglish) with 8 customer turns each, quiet audio, n=1 per cell.
+
+| Metric | OpenAI `gpt-realtime-2.1-mini` | Gemini `gemini-3.8-live` |
+|---|---|---|
+| Booking reached summary with correct price/time (EN, Hinglish) | ✅ ✅ | ✅ ✅ |
+| Phone number exact (incl. Hindi digits "nau aath saat…") | ✅ ✅ | ✅ ✅ |
+| Tool-call validity | 1 out-of-order call (fixed in code), rest valid | all valid |
+| Time to first audio after speech, p50 (EN / Hinglish) | 2.1 s / 2.7 s | 1.5 s / 1.5 s (one 10.9 s outlier) |
+| Replies in the customer's language (Hinglish) | ❌ answered in English | ⚠️ partly (Hindi greeting, Hinglish close) |
+| Verbosity (assistant audio per session) | 88–90 s | 38–49 s |
+| Measured cost per booking session | ≈ $0.073 (₹6.4), 93% of text tokens cached | ≈ $0.092 (₹8.1), no caching |
+| Transcription quirks | one Gurmukhi-script transcript of Hindi | none seen |
+
+**Reading:**
+- Both are viable, and both stay inside the budget (doc 12).
+- Gemini was faster, briefer and more natural in Hinglish.
+- OpenAI was cheaper per session, but slower and English-only in its replies.
+- Neither model said a booking was confirmed. Both sent the customer to tap "Confirm booking", which is the only path the tools allow.
+
+**Limits:**
+- Synthetic voices only, no background noise, n=1.
+- Not yet tested: barge-in timing, a real laptop or kiosk microphone, multiple human speakers.
+
+**Fixes made from this round:** giving a name now moves past the greeting automatically; there's a stricter "no lists aloud, under 25 words" rule; Gemini usage is summed per turn.
+
+**Next round (decides ADR-007):** 6 human speakers × 3 languages, with reception-noise playback and barge-in timing, on the kiosk's laptop mic, using the same harness.
+
 ## Sources
 - Google Gemini API pricing: https://aistudio.google.com/docs/pricing (redirect from ai.google.dev/gemini-api/docs/pricing), fetched 2026-11-10
 - OpenAI API pricing: https://developers.openai.com/api/docs/pricing, fetched 2026-11-10

@@ -234,6 +234,9 @@ class ToolExecutor:
         if name == "continue_from_greeting":
             return await self._intent("continue")
         if name == "set_customer_name":
+            # Voice skips the visual welcome step: giving a name moves past the greeting screen.
+            if (await self.flow.current(self.device_id)).state == "GREETING":
+                await self._intent("continue")
             return await self._intent("set_name", {"name": str(a["name"])})
         if name == "set_customer_phone":
             return await self._intent("set_phone", {"phone": str(a["phone_digits"])})

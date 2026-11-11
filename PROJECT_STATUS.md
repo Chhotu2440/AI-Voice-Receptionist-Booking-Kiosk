@@ -3,15 +3,13 @@
 **Updated:** 2026-11-11 · **Phase:** 5, Sprint 4 in progress (presence ✅, voice gateway ✅, live voice test pending) · **Overall:** 🟢
 
 ## Sprint 4 progress
-- **Done:** on-device presence detection (CAM-01/02), with unit and E2E tests; kiosk CI green.
-- **Done:** voice gateway `/ws/voice`, provider interface, OpenAI Realtime and Gemini Live adapters, 19 allowlisted tools on the kiosk state machine, barge-in, touch-only fallback. 160 backend tests pass locally.
-- **Done (untested live):** kiosk mic capture and playback worklets, captions, mic toggle. Type-check, unit tests and build pass.
-- **Next:**
-  1. You add `OPENAI_API_KEY` and `GEMINI_API_KEY` to `backend/.env`.
-  2. Set `voice_enabled: true` on the kiosk (admin PATCH).
-  3. Live test both providers on a laptop mic.
-  4. Fix any protocol mismatches; the adapters haven't been verified against the real services yet.
-  5. Run the bake-off scorecard (VOICE-01) and log usage to the DB (VOICE-06).
+- **Done:** on-device presence detection (CAM-01/02), unit + E2E tested.
+- **Done:** voice gateway, provider interface, OpenAI Realtime + Gemini Live adapters, 19 allowlisted tools, barge-in, touch-only fallback, kiosk mic/playback client. Voice is on by default.
+- **Verified live (2026-11-11):** both providers complete a full voice booking up to the summary in English and Hinglish, from real streamed audio, with correct phone numbers, prices and times. Results are in [docs/11 §5](docs/11-voice-provider-comparison.md).
+  - Gemini: faster (p50 1.5 s), more natural Hinglish, ≈ ₹8/session.
+  - OpenAI: cheaper (≈ ₹6.4/session), slower (p50 2.1–2.7 s), replies only in English.
+- **Not yet verified:** the kiosk browser voice path with a real laptop mic (mic capture, playback, barge-in timing); human speakers; noise.
+- **Next:** in-browser voice test on the laptop, bake-off round 2 with human speakers, then VOICE-06 (usage logged to the DB, spend alerts).
 
 ---
 

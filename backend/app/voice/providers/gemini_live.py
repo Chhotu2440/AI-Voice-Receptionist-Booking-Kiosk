@@ -76,17 +76,21 @@ def setup_payload(settings: Settings, instructions: str, tools: list[ToolSpec]) 
 
 
 def _usage(u: dict[str, Any]) -> UsageRecord:
+    """Field names vary between model versions (responseTokensDetails / candidatesTokensDetails)."""
     rec = UsageRecord()
     for d in u.get("promptTokensDetails") or []:
         if d.get("modality") == "AUDIO":
             rec.audio_in_tokens += int(d.get("tokenCount", 0))
         else:
             rec.text_in_tokens += int(d.get("tokenCount", 0))
-    for d in u.get("responseTokensDetails") or []:
+    out_details = u.get("responseTokensDetails") or u.get("candidatesTokensDetails") or []
+    for d in out_details:
         if d.get("modality") == "AUDIO":
             rec.audio_out_tokens += int(d.get("tokenCount", 0))
         else:
             rec.text_out_tokens += int(d.get("tokenCount", 0))
+    if not out_details:  # only a total is reported: attribute it to audio (responses are audio-only)
+        rec.audio_out_tokens = int(u.get("responseTokenCount", 0) or u.get("candidatesTokenCount", 0))
     rec.text_cached_tokens = int(u.get("cachedContentTokenCount", 0))
     return rec
 
@@ -116,8 +120,12 @@ def parse_message(msg: dict[str, Any], st: ParseState) -> list[ProviderEvent]:
             )
         )
     if msg.get("usageMetadata"):
-        # usageMetadata is cumulative for the session in Live; keep the latest snapshot.
-        st.usage = _usage(msg["usageMetadata"])
+        # Observed live (2026-11-11): usageMetadata is reported per model turn (promptTokenCount covers the
+        # whole context re-read for that turn), so turns are summed. Verify against Google's billing console.
+        turn = _usage(msg["usageMetadata"])
+        st.usage.add(turn)
+        st.usage.extra.setdefault("turns", 0)
+        st.usage.extra["turns"] += 1
     if "goAway" in msg:
         events.append(ProviderError("Live session ending soon (goAway)", fatal=False))
     if "error" in msg:

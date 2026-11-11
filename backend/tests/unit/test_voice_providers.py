@@ -158,4 +158,18 @@ def test_gemini_message_mapping() -> None:
         st,
     )
     assert (st.usage.audio_in_tokens, st.usage.text_in_tokens, st.usage.audio_out_tokens) == (50, 900, 70)
+    parse(
+        {
+            "usageMetadata": {
+                "promptTokensDetails": [{"modality": "AUDIO", "tokenCount": 5}],
+                "responseTokenCount": 9,
+            }
+        },
+        st,
+    )
+    assert (st.usage.audio_in_tokens, st.usage.audio_out_tokens, st.usage.extra["turns"]) == (
+        55,
+        79,
+        2,
+    )  # summed per turn
     assert parse({"goAway": {"timeLeft": "10s"}}, st)[0].fatal is False  # type: ignore[union-attr]

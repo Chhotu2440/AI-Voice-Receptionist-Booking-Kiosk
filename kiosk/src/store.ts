@@ -30,7 +30,7 @@ interface KioskStore {
 export const DEFAULT_CONFIG: KioskConfig = {
   idle_timeout_s: 60,
   success_reset_s: 20,
-  voice_enabled: false,
+  voice_enabled: true,
   volume: 70,
   assistant_name: "Zara",
   presence_enabled: true,

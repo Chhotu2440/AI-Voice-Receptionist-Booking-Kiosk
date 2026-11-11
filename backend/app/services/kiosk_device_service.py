@@ -29,7 +29,7 @@ _PAIRING_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"  # no 0/O/1/I/L
 DEFAULT_CONFIG: dict[str, Any] = {
     "idle_timeout_s": 60,
     "success_reset_s": 20,
-    "voice_enabled": False,
+    "voice_enabled": True,
     "volume": 70,
     "assistant_name": "Zara",
     # On-device presence detection (CAM-01); tune per venue from the admin dashboard.

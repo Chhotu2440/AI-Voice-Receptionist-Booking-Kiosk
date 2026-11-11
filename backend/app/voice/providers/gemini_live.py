@@ -71,6 +71,15 @@ def setup_payload(settings: Settings, instructions: str, tools: list[ToolSpec]) 
             ],
             "inputAudioTranscription": {},
             "outputAudioTranscription": {},
+            # A noisy reception: start a turn only on clear speech, and don't cut the customer off mid-pause.
+            "realtimeInputConfig": {
+                "automaticActivityDetection": {
+                    "startOfSpeechSensitivity": "START_SENSITIVITY_LOW",
+                    "endOfSpeechSensitivity": "END_SENSITIVITY_LOW",
+                    "prefixPaddingMs": 200,
+                    "silenceDurationMs": 700,
+                }
+            },
         }
     }
 
@@ -135,6 +144,7 @@ def parse_message(msg: dict[str, Any], st: ParseState) -> list[ProviderEvent]:
 
 class GeminiLiveProvider:
     name = "gemini"
+    speech_gate = "transcript"
     input_rate = IN_RATE
     output_rate = OUT_RATE
 

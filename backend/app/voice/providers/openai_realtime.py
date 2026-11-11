@@ -148,6 +148,7 @@ def parse_event(evt: dict[str, Any], st: ParseState) -> list[ProviderEvent]:
 
 class OpenAIRealtimeProvider:
     name = "openai"
+    speech_gate = "vad"  # input transcription is asynchronous and may land after tool calls
     input_rate = RATE
     output_rate = RATE
 

@@ -1,6 +1,6 @@
 """Prepare a throwaway SQLite database for the kiosk Playwright tests (never used for real data).
 
-    DATABASE_URL=sqlite+aiosqlite:///./e2e.db E2E_ADMIN_PASSWORD=... python scripts/e2e_setup.py
+DATABASE_URL=sqlite+aiosqlite:///./e2e.db E2E_ADMIN_PASSWORD=... python scripts/e2e_setup.py
 """
 
 from __future__ import annotations

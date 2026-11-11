@@ -16,7 +16,10 @@ interface KioskStore {
   config: KioskConfig;
   socket: KioskSocket | null;
   camera: { ok: boolean | null; faces: number; present: boolean };
-  voice: { status: VoiceStatus; caption: { role: string; text: string } | null; muted: boolean };
+  voice: { status: VoiceStatus; caption: string | null; muted: boolean; userSpeaking: boolean };
+  /** Last time the customer did anything (touch, speech, a step change) - drives the inactivity reset. */
+  lastActivity: number;
+  touchActivity: () => void;
   setVoice: (v: Partial<KioskStore["voice"]>) => void;
   setCamera: (c: Partial<KioskStore["camera"]>) => void;
   setSocket: (s: KioskSocket | null) => void;
@@ -34,9 +37,9 @@ export const DEFAULT_CONFIG: KioskConfig = {
   volume: 70,
   assistant_name: "Zara",
   presence_enabled: true,
-  presence_min_face_area: 0.02,
-  presence_dwell_ms: 1500,
-  presence_leave_ms: 15000,
+  presence_min_face_area: 0.012,
+  presence_dwell_ms: 1200,
+  presence_leave_ms: 20000,
   presence_debug: false,
 };
 
@@ -49,7 +52,9 @@ export const useKiosk = create<KioskStore>((set, get) => ({
   config: DEFAULT_CONFIG,
   socket: null,
   camera: { ok: null, faces: 0, present: false },
-  voice: { status: "off", caption: null, muted: false },
+  voice: { status: "off", caption: null, muted: false, userSpeaking: false },
+  lastActivity: Date.now(),
+  touchActivity: () => set({ lastActivity: Date.now() }),
   setVoice: (v) => set({ voice: { ...get().voice, ...v } }),
   setCamera: (c) => set({ camera: { ...get().camera, ...c } }),
   setSocket: (socket) => set({ socket }),
@@ -78,6 +83,15 @@ export const useKiosk = create<KioskStore>((set, get) => ({
   },
   clearToast: () => set({ toast: null }),
 }));
+
+/** Assistant output level, updated ~30 times/s outside React (read by the robot's animation loop). */
+export const audioLevel = { output: 0 };
+
+/** Captions are shown only in English (Latin script) or Hindi (Devanagari); anything else is hidden. */
+export function displayableCaption(text: string): boolean {
+  const letters = text.match(/\p{L}/gu) ?? [];
+  return letters.length > 0 && letters.every((ch) => /[A-Za-zऀ-ॿ]/.test(ch));
+}
 
 export function useT() {
   const lang: Lang = useKiosk((s) => s.state?.language ?? "en");

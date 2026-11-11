@@ -92,7 +92,9 @@ class KioskState(BaseModel):
     hold_expires_at: dt.datetime | None = None
     hold_can_extend: bool = False
     quote: PriceQuoteOut | None = None
-    whatsapp_consent: bool = False
+    # Booking confirmation on WhatsApp is pre-selected (owner decision 2026-11-11); the customer can untick it
+    # and the choice is recorded per booking in customer_consents.
+    whatsapp_consent: bool = True
     booking: BookingOut | None = None
     enquiry_reference: str | None = None
     resume_state: str | None = None

@@ -31,11 +31,12 @@ export interface PresenceConfig {
 }
 
 export const DEFAULT_PRESENCE: PresenceConfig = {
-  minFaceArea: 0.02,
-  maxYaw: 0.35,
-  minScore: 0.6,
-  dwellMs: 1500,
-  leaveMs: 15_000,
+  // Tuned after the first laptop trial: closer/further and slightly turned faces must still count.
+  minFaceArea: 0.012,
+  maxYaw: 0.45,
+  minScore: 0.5,
+  dwellMs: 1200,
+  leaveMs: 20_000,
   gapToleranceMs: 400,
 };
 
@@ -74,7 +75,7 @@ export class PresenceTracker {
   update(faces: Face[], now: number): PresenceEvent | null {
     const engagedNow = faces.some((f) => engaged(f, this.cfg));
     // Once present, keep the person "seen" even if they glance away or step back a little.
-    const seenNow = faces.some((f) => f.score >= this.cfg.minScore && f.w * f.h >= this.cfg.minFaceArea * 0.5);
+    const seenNow = faces.some((f) => f.score >= this.cfg.minScore * 0.8 && f.w * f.h >= this.cfg.minFaceArea * 0.3);
 
     if (!this.present) {
       if (engagedNow) {

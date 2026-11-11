@@ -71,6 +71,7 @@ class UsageRecord:
 
 class VoiceProvider(Protocol):
     name: str
+    speech_gate: str  # "transcript" | "vad" | "off" - see app/voice/speech_gate.py
     input_rate: int  # PCM16 sample rate the provider expects from the kiosk
     output_rate: int  # PCM16 sample rate of the audio it returns
 

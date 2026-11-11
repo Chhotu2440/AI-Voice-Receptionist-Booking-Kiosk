@@ -40,6 +40,7 @@ from app.voice.provider import (
     TurnDone,
     VoiceProvider,
 )
+from app.voice.speech_gate import BLOCKED_RESULT, SpeechGate
 from app.voice.tools import TOOLS, ToolExecutor, summarize
 
 log = logging.getLogger(__name__)
@@ -111,6 +112,7 @@ async def voice_socket(ws: WebSocket) -> None:
         return
 
     executor = ToolExecutor(flow, app_state.sessionmaker, device_id)
+    gate = SpeechGate(provider.speech_gate)  # type: ignore[arg-type]
     updates = flow.bus.subscribe(device_id)
     muted = False
     started = time.monotonic()
@@ -150,18 +152,26 @@ async def voice_socket(ws: WebSocket) -> None:
                     await send_json({"type": "voice.status", "status": "speaking"})
                 await send_bytes(ev.pcm16)
             elif isinstance(ev, SpeechStarted):
+                gate.on_speech_started()
                 speaking = False
                 await send_json({"type": "audio.interrupt"})
                 await provider.interrupt()
                 await send_json({"type": "voice.status", "status": "listening"})
             elif isinstance(ev, Transcript):
+                if ev.role == "user":
+                    gate.on_user_transcript(ev.text)
                 await send_json({"type": "caption", "role": ev.role, "text": ev.text, "final": ev.final})
             elif isinstance(ev, ToolCall):
                 await send_json({"type": "voice.status", "status": "thinking"})
-                result = await executor.execute(ev.name, ev.arguments)
+                if gate.allows(ev.name):
+                    result = await executor.execute(ev.name, ev.arguments)
+                else:
+                    log.info("voice_tool_blocked_no_speech", extra={"tool": ev.name})
+                    result = dict(BLOCKED_RESULT)
                 await provider.send_tool_result(ev, result)
                 await provider.request_response()
             elif isinstance(ev, TurnDone):
+                gate.on_turn_done()
                 speaking = False
                 await send_json({"type": "voice.status", "status": "listening"})
             elif isinstance(ev, ProviderError):
@@ -176,6 +186,8 @@ async def voice_socket(ws: WebSocket) -> None:
             if change.state.state in ("IDLE", "SESSION_CANCELLED"):
                 return  # session over: end the voice session too
             if change.source == "touch":
+                # The screen moved on: drop whatever the assistant was still saying about the old step.
+                await send_json({"type": "audio.interrupt"})
                 await provider.send_text(screen_note(change.intent, summarize(change.state)))
                 await provider.request_response()
 

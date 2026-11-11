@@ -73,7 +73,7 @@ export function CustomEventScreen() {
   const occasion = useKiosk((s) => s.state?.occasion_code ?? "OTHER");
   const [notes, setNotes] = useState("");
   const [date, setDate] = useState<string | null>(null);
-  const [whatsapp, setWhatsapp] = useState(false);
+  const [whatsapp, setWhatsapp] = useState(true);
   const days = Array.from({ length: 14 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() + i + 1);

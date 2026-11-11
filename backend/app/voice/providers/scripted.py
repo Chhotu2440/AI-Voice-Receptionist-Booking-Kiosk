@@ -25,6 +25,7 @@ TONE = bytes(480 * 2)  # 20 ms of silence at 24 kHz, enough to exercise the audi
 
 class ScriptedProvider:
     name = "scripted"
+    speech_gate = "off"
     input_rate = 16_000
     output_rate = 24_000
 

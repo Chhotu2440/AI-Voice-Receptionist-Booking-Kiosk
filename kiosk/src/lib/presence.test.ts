@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import { DEFAULT_PRESENCE, PresenceTracker, isFrontal, type Face } from "./presence";
 
+// Explicit thresholds so these tests don't change when the venue defaults are tuned.
+const CFG = { ...DEFAULT_PRESENCE, minFaceArea: 0.02, maxYaw: 0.35, minScore: 0.6, dwellMs: 1500, leaveMs: 15_000 };
+
 /** A face centred at (cx, cy) with relative size `size`; `yaw` shifts the nose sideways. */
 function face(size = 0.25, yaw = 0, score = 0.9): Face {
   const cx = 0.5;
@@ -41,14 +44,14 @@ describe("presence", () => {
   });
 
   it("greets only after the dwell time", () => {
-    const tr = new PresenceTracker();
+    const tr = new PresenceTracker(CFG);
     expect(run(tr, every200(0, 1400, [face()]))).toEqual([]);
     expect(tr.update([face()], 1600)).toBe("arrived");
     expect(tr.present).toBe(true);
   });
 
   it("ignores people walking past (short dwell), far away, or looking sideways", () => {
-    const tr = new PresenceTracker();
+    const tr = new PresenceTracker(CFG);
     expect(run(tr, every200(0, 800, [face()]))).toEqual([]);
     expect(run(tr, every200(1000, 4000, []))).toEqual([]);
     expect(run(tr, every200(4200, 9000, [face(0.08)]))).toEqual([]); // area 0.0064 < 0.02
@@ -57,7 +60,7 @@ describe("presence", () => {
   });
 
   it("tolerates brief detection dropouts while dwelling", () => {
-    const tr = new PresenceTracker();
+    const tr = new PresenceTracker(CFG);
     const frames: [number, Face[]][] = [
       [0, [face()]],
       [200, [face()]],
@@ -73,7 +76,7 @@ describe("presence", () => {
   });
 
   it("restarts the dwell after a longer gap", () => {
-    const tr = new PresenceTracker();
+    const tr = new PresenceTracker(CFG);
     run(tr, every200(0, 1000, [face()]));
     run(tr, every200(1200, 2400, []));
     expect(run(tr, every200(2600, 3800, [face()]))).toEqual([]);
@@ -81,7 +84,7 @@ describe("presence", () => {
   });
 
   it("reports leaving only after leaveMs without anyone, and keeps glancing customers", () => {
-    const tr = new PresenceTracker();
+    const tr = new PresenceTracker(CFG);
     run(tr, every200(0, 1600, [face()]));
     expect(tr.present).toBe(true);
     // Looking down at the screen (turned) or stepping back a bit still counts as there.

@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 
 import { useKiosk, useT } from "../store";
+import { Robot } from "./Robot";
 import type { KioskStateName } from "../types";
 
 export function Button({
@@ -69,22 +70,9 @@ export function Tile({
   );
 }
 
-export function Assistant() {
-  const status = useKiosk((s) => s.voice.status);
-  const speaking = status === "speaking";
-  const listening = status === "listening";
-  return (
-    <div className="relative mx-auto h-56 w-56" aria-hidden data-voice={status}>
-      <div className={`absolute inset-0 rounded-full blur-2xl ${speaking ? "bg-plasma/25" : "bg-laser/10"}`} />
-      <div
-        className={`absolute inset-6 rounded-full border-4 bg-gradient-to-br from-arena-700 to-arena-950 ${
-          speaking ? "animate-pulse border-plasma" : listening ? "border-signal" : "animate-breathe border-laser/80"
-        }`}
-      />
-      <div className={`absolute inset-[38%] rounded-full shadow-laser ${speaking ? "bg-plasma" : "bg-laser"}`} />
-      <div className="absolute left-1/2 top-[18%] h-[64%] w-1 -translate-x-1/2 rounded bg-plasma/60" />
-    </div>
-  );
+/** Kept as the name used across screens; it is now the animated, audio-driven robot. */
+export function Assistant({ size }: { size?: number }) {
+  return <Robot size={size} />;
 }
 
 const STEP_OF: Partial<Record<KioskStateName, number>> = {
@@ -136,8 +124,8 @@ export function Screen({ prompt, sub, children }: { prompt: string; sub?: string
         <ProgressRail />
       </header>
       <main className="flex min-h-0 flex-1 gap-10 px-10 py-6">
-        <section className="flex w-[32%] flex-col justify-center gap-8 animate-rise">
-          <Assistant />
+        <section className="flex w-[32%] flex-col items-center justify-center gap-6 text-center animate-rise">
+          <Assistant size={320} />
           <h1 className="font-display text-[40px] leading-tight" data-testid="prompt">
             {prompt}
           </h1>
@@ -272,9 +260,8 @@ function VoiceCaption() {
   const voice = useKiosk((s) => s.voice);
   if (voice.status === "off" || voice.status === "unavailable" || !voice.caption) return null;
   return (
-    <p data-testid="voice-caption" className={`text-2xl ${voice.caption.role === "user" ? "text-ink-muted italic" : "text-laser"}`}>
-      {voice.caption.role === "user" ? "🎤 " : ""}
-      {voice.caption.text}
+    <p data-testid="voice-caption" className="text-2xl leading-snug text-laser">
+      “{voice.caption}”
     </p>
   );
 }

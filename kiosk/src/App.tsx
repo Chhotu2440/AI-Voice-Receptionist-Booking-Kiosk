@@ -94,23 +94,27 @@ function Kiosk({ onUnpaired }: { onUnpaired: () => void }) {
     if (cameraOk !== null) void beat();
   }, [cameraOk, beat]);
 
-  // Inactivity: after idle_timeout_s without a touch, ask "still there?", then clear the session (PII).
+  // Inactivity: after idle_timeout_s with no touch, no speech and no step change, ask "still there?",
+  // then clear the session (PII). Talking to the assistant counts as activity (useVoice).
   const [stillThere, setStillThere] = useState(false);
-  const lastTouch = useRef(Date.now());
+  const touchActivity = useKiosk((s) => s.touchActivity);
+  const forcedIdle = useRef(false);
   useEffect(() => {
     const touch = () => {
-      lastTouch.current = Date.now();
+      touchActivity();
+      forcedIdle.current = false;
       setStillThere(false);
     };
     window.addEventListener("pointerdown", touch);
     return () => window.removeEventListener("pointerdown", touch);
-  }, []);
+  }, [touchActivity]);
   useEffect(() => {
-    lastTouch.current = Date.now();
-  }, [version]);
-  // The customer walked away: show "still there?" now and clear the session after the grace period.
+    touchActivity();
+  }, [version, touchActivity]);
+  // The camera lost the customer. Ask "still there?" only if they also stopped talking and touching
+  // recently - people look down, turn to friends, or step back while still booking.
   usePresence(() => {
-    lastTouch.current = Date.now() - idleTimeout * 1000 - 1;
+    if (Date.now() - useKiosk.getState().lastActivity > 15_000) forcedIdle.current = true;
   });
   const camera = useKiosk((s) => s.camera);
   useVoice(getToken);
@@ -120,11 +124,15 @@ function Kiosk({ onUnpaired }: { onUnpaired: () => void }) {
     const exempt = ["IDLE", "BOOKING_CONFIRMED", "SESSION_COMPLETE", "SESSION_CANCELLED", "STAFF_ASSISTANCE"];
     const id = window.setInterval(() => {
       if (exempt.includes(kioskState)) return setStillThere(false);
-      const idle = (Date.now() - lastTouch.current) / 1000;
-      if (idle > idleTimeout + STILL_THERE_GRACE_S) {
+      const st = useKiosk.getState();
+      if (st.voice.userSpeaking || st.voice.status === "speaking") st.touchActivity();
+      const idle = (Date.now() - useKiosk.getState().lastActivity) / 1000;
+      const limit = forcedIdle.current ? 0 : idleTimeout;
+      if (idle > limit + STILL_THERE_GRACE_S) {
         setStillThere(false);
+        forcedIdle.current = false;
         send("reset", { reason: "TIMEOUT" });
-      } else if (idle > idleTimeout) setStillThere(true);
+      } else if (idle > limit) setStillThere(true);
     }, 1000);
     return () => window.clearInterval(id);
   }, [kioskState, idleTimeout, send]);

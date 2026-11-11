@@ -53,6 +53,7 @@ from app.voice.provider import (  # noqa: E402
     TurnDone,
     VoiceProvider,
 )
+from app.voice.speech_gate import BLOCKED_RESULT, SpeechGate  # noqa: E402
 from app.voice.tools import TOOLS, ToolExecutor, summarize  # noqa: E402
 
 
@@ -73,6 +74,16 @@ SCRIPTS: dict[str, list[str]] = {
         "Which one do you recommend? Actually, let's take the expert package.",
         "Next Monday, please.",
         "Six PM works.",
+    ],
+    # Background noise between real answers: the assistant must not fill in anything on its own.
+    "noise": [
+        "Hi! My name is Riya.",
+        "<noise>",
+        "My number is nine eight seven six five, four three two one zero.",
+        "Yes, that's correct.",
+        "<noise>",
+        "<noise>",
+        "We are four people.",
     ],
     "hinglish": [
         "Namaste, mera naam Amit hai.",
@@ -139,6 +150,19 @@ def resample(pcm: bytes, src: int, dst: int) -> bytes:
     return out.tobytes()
 
 
+def noise(rate: int, seconds: float, level: int = 2500) -> bytes:
+    """Reception-like noise: random broadband hiss with slow loudness swells (no speech)."""
+    import math
+    import random
+
+    rnd = random.Random(7)
+    out = array("h")
+    for i in range(int(rate * seconds)):
+        swell = 0.6 + 0.4 * math.sin(2 * math.pi * i / rate * 0.7)
+        out.append(int(max(-32768, min(32767, rnd.gauss(0, level) * swell))))
+    return out.tobytes()
+
+
 # --- run -------------------------------------------------------------------------------------------------
 
 
@@ -152,7 +176,9 @@ def make_provider(name: str, settings: Settings) -> VoiceProvider:
     return GeminiLiveProvider(settings)
 
 
-async def run_provider(name: str, script: list[str], settings: Settings, cache: Path, workdir: Path) -> dict[str, Any]:
+async def run_provider(
+    name: str, script: list[str], settings: Settings, cache: Path, workdir: Path
+) -> dict[str, Any]:
     db = workdir / f"bakeoff-{name}.db"
     db.unlink(missing_ok=True)
     engine = create_async_engine(f"sqlite+aiosqlite:///{db.as_posix()}")
@@ -171,6 +197,7 @@ async def run_provider(name: str, script: list[str], settings: Settings, cache: 
     state = await flow.current(device_id)
     provider = make_provider(name, settings)
     executor = ToolExecutor(flow, maker, device_id)
+    gate = SpeechGate(provider.speech_gate)  # type: ignore[arg-type]
     turns: list[Turn] = [Turn(said="(session start)")]
     last_event = time.monotonic()
     speech_end: float | None = None
@@ -193,18 +220,27 @@ async def run_provider(name: str, script: list[str], settings: Settings, cache: 
                     turn.ttfa_ms = int((time.monotonic() - speech_end) * 1000)
             elif isinstance(ev, Transcript):
                 if ev.role == "user":
+                    gate.on_user_transcript(ev.text)
                     turn.heard += ev.text if not ev.final else (" " if turn.heard else "") + ev.text
                 else:
                     turn.reply = ev.text if ev.final else turn.reply + ev.text
             elif isinstance(ev, ToolCall):
-                result = await executor.execute(ev.name, ev.arguments)
-                turn.tools.append(f"{ev.name}({json.dumps(ev.arguments, ensure_ascii=False)}) -> {'ok' if result.get('ok') else 'ERR ' + str(result.get('error'))}")
+                result = (
+                    await executor.execute(ev.name, ev.arguments)
+                    if gate.allows(ev.name)
+                    else dict(BLOCKED_RESULT)
+                )
+                turn.tools.append(
+                    f"{ev.name}({json.dumps(ev.arguments, ensure_ascii=False)}) -> {'ok' if result.get('ok') else 'ERR ' + str(result.get('error'))}"
+                )
                 await provider.send_tool_result(ev, result)
                 await provider.request_response()
             elif isinstance(ev, ProviderError):
                 turn.errors.append(ev.message[:200])
-            elif isinstance(ev, (SpeechStarted, TurnDone)):
-                pass
+            elif isinstance(ev, SpeechStarted):
+                gate.on_speech_started()
+            elif isinstance(ev, TurnDone):
+                gate.on_turn_done()
 
     consumer = asyncio.create_task(consume())
 
@@ -218,7 +254,10 @@ async def run_provider(name: str, script: list[str], settings: Settings, cache: 
     await settle()
     frame_s = 0.04
     for utterance in script:
-        pcm = resample(await tts(settings, utterance, cache), 24_000, provider.input_rate)
+        if utterance == "<noise>":
+            pcm = noise(provider.input_rate, seconds=4.0)
+        else:
+            pcm = resample(await tts(settings, utterance, cache), 24_000, provider.input_rate)
         turns.append(Turn(said=utterance))
         step = int(provider.input_rate * frame_s) * 2
         silence = bytes(step)
@@ -247,7 +286,10 @@ async def run_provider(name: str, script: list[str], settings: Settings, cache: 
         "quote_total": str(final.quote.total) if final.quote else None,
         "start_time": final.start_time,
         "customer": {"name": final.customer_name, "phone": final.phone_e164, "guests": final.guest_count},
-        "ttfa_ms": {"p50": sorted(ttfas)[len(ttfas) // 2] if ttfas else None, "max": max(ttfas) if ttfas else None},
+        "ttfa_ms": {
+            "p50": sorted(ttfas)[len(ttfas) // 2] if ttfas else None,
+            "max": max(ttfas) if ttfas else None,
+        },
         "assistant_audio_s": round(audio_out_s, 1),
         "usage": usage.__dict__,
         "turns": [t.__dict__ for t in turns],
@@ -275,7 +317,9 @@ async def main() -> None:
         path.write_text(json.dumps(result, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
         print(json.dumps({k: v for k, v in result.items() if k != "turns"}, ensure_ascii=False, default=str))
         for t in result.get("turns", []):
-            print(f"  SAID : {t['said']}\n  HEARD: {t['heard']}\n  REPLY: {t['reply']}\n  TOOLS: {t['tools']}  ttfa={t['ttfa_ms']}ms {t['errors'] or ''}")
+            print(
+                f"  SAID : {t['said']}\n  HEARD: {t['heard']}\n  REPLY: {t['reply']}\n  TOOLS: {t['tools']}  ttfa={t['ttfa_ms']}ms {t['errors'] or ''}"
+            )
         print(f"  -> {path}")
 
 

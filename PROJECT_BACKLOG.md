@@ -10,7 +10,6 @@ Full task list with descriptions, dependencies, estimates and acceptance criteri
 | COMPLETED (Sprint 3) | KIOSK-01…05, KIOSK-06 (resilience: offline shell, freeze watchdog, crash restart, dead-socket detection, browser restart scripts) |
 | COMPLETED (Sprint 4) | CAM-01…02, VOICE-01…06, INT-01 (live send waits on the Interakt key/template) |
 | COMPLETED (Sprint 5) | ADMIN-01 (shell, login, role-based menus), ADMIN-02 (packages, occasions, pricing + price check, schedule, arena, booking rules, venue), ADMIN-03 bookings, enquiries, customers (export, correction, erasure), staff accounts, audit log viewer, ADMIN-04 kiosks + AI cost/budget, dashboard |
-| IN_PROGRESS | KIOSK-06 (service-worker shell, watchdog remaining) |
 | READY | DISC-06, CORE-05 (2FA) |
 | BLOCKED | DISC-03 (owner: DaySchedule account details), DISC-04 (API key) |
 | BACKLOG | CORE-05 (TOTP), VOICE-07, INT-02…03, ADMIN-05 (web booking), retention job (24-month auto-anonymize), REL-01…08 |

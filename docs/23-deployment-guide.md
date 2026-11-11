@@ -34,3 +34,21 @@ Relay through our backend (ADR-005); provider keys never leave the server. If we
 
 ## 7. Monitoring
 Uptime checks (/readyz, kiosk heartbeat freshness), error tracking (Sentry self-hosted or SaaS free tier), metrics (Prometheus + Grafana or provider-native), alerts by email and WhatsApp to the owner/tech contact. See doc 24.
+
+## 8. WhatsApp setup (Interakt)
+Booking confirmations are sent as an approved WhatsApp **utility** template through Interakt.
+
+1. In Interakt, create a template whose code name matches `INTERAKT_BOOKING_TEMPLATE` (default `booking_confirmation`), category **Utility**, language **English**, and get Meta approval. The body must have **8 variables in this order**:
+   ```
+   Hi {{1}}, your Play Laser Tag booking is confirmed! 🎯
+   Booking ref: {{2}}
+   Date: {{3}}
+   Time: {{4}}
+   Package: {{5}} for {{6}} players
+   Total: {{7}} ({{8}})
+   See you at T-49, Hauz Khas Village. Show this message at the reception desk.
+   ```
+   The variables are filled from the booking: name, reference, date, time, package, players, total and payment status, for example "Pay at reception".
+2. Put the API key in `INTERAKT_API_KEY` in `backend/.env`, along with a random `INTERAKT_WEBHOOK_SECRET`.
+3. In Interakt's Developer Settings, set the webhook URL to `https://<domain>/api/v1/webhooks/interakt/<INTERAKT_WEBHOOK_SECRET>`. Enable the message status events (`message_api_sent/delivered/read/failed`). Interakt webhooks need the Growth or Advanced plan. Without them, messages still send, but stay at "SENT" in the log.
+4. Check the log at `GET /api/v1/admin/notifications`. Status moves QUEUED → SENT → DELIVERED → READ. FAILED and SKIPPED rows carry the reason. Retryable errors are retried 3 times (30 s, 2 min, 10 min). The worker process must be running for retries.

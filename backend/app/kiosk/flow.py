@@ -28,6 +28,7 @@ from app.services import (
     booking_service,
     enquiry_service,
     hold_service,
+    notification_service,
     package_service,
     pricing_service,
     schedule_service,
@@ -390,6 +391,7 @@ class KioskFlow:
                     await self._load_slots(db, s)
                     s.state = "SLOT_SELECTION"
                 raise
+        notification_service.schedule_send(self.maker, self.settings)
         s.booking = BookingOut.model_validate(body)
         s.hold_id = s.hold_token = None
         s.state = "BOOKING_CONFIRMED"

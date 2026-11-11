@@ -25,7 +25,7 @@ from app.schemas.booking import (
     StatusUpdate,
 )
 from app.schemas.common import Page, PageParams
-from app.services import booking_service, enquiry_service, hold_service, idempotency
+from app.services import booking_service, enquiry_service, hold_service, idempotency, notification_service
 from app.services.phone import normalize_indian_mobile
 
 router = APIRouter(prefix="/admin", tags=["admin-bookings"])
@@ -109,6 +109,7 @@ async def staff_booking(
         idempotency_key=idempotency.validate_key(idempotency_key),
         actor=user_actor(user, request),
     )
+    notification_service.schedule_send(request.app.state.sessionmaker, settings)
     return JSONResponse(status_code=code, content=payload)
 
 

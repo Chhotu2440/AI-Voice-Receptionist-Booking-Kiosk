@@ -53,6 +53,14 @@ class Settings(BaseSettings):
     gemini_voice: str = "Kore"
     voice_max_session_seconds: int = 600
 
+    # --- WhatsApp via Interakt (INT-01) ---
+    interakt_api_key: SecretStr | None = None
+    interakt_booking_template: str = "booking_confirmation"
+    interakt_template_language: str = "en"
+    # Interakt's public docs don't describe webhook signing, so the webhook URL carries this secret:
+    # https://<host>/api/v1/webhooks/interakt/<INTERAKT_WEBHOOK_SECRET>
+    interakt_webhook_secret: SecretStr | None = None
+
     cors_origins: list[str] = Field(default_factory=list)
     business_timezone: str = "Asia/Kolkata"
     check_migrations_on_ready: bool = True

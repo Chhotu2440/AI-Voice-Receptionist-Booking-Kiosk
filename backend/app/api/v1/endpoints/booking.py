@@ -26,7 +26,14 @@ from app.schemas.booking import (
     HoldOut,
     HoldStatusOut,
 )
-from app.services import availability_service, booking_service, enquiry_service, hold_service, idempotency
+from app.services import (
+    availability_service,
+    booking_service,
+    enquiry_service,
+    hold_service,
+    idempotency,
+    notification_service,
+)
 
 PUBLIC_CHANNEL = "WEB"
 
@@ -108,6 +115,7 @@ async def create_booking(
         idempotency_key=idempotency.validate_key(idempotency_key),
         actor=public_actor(request),
     )
+    notification_service.schedule_send(request.app.state.sessionmaker, settings)
     return JSONResponse(status_code=code, content=payload)
 
 

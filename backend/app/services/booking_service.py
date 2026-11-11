@@ -51,6 +51,7 @@ from app.services import (
     customer_service,
     hold_service,
     idempotency,
+    notification_service,
     pricing_service,
     schedule_service,
 )
@@ -336,6 +337,9 @@ async def create_booking(
         session.add(booking)
         await session.flush()
         hold.status, hold.booking_id = "CONVERTED", booking.id
+        if data.consents.whatsapp:
+            # Queued in the same transaction: no confirmation for a booking that rolls back, none lost.
+            notification_service.queue_booking_confirmation(session, settings, booking, customer, package)
 
         body = booking_out(settings, booking, package, occasion, with_token=True).model_dump(mode="json")
         idempotency.finish(key_row, 201, body)

@@ -2,7 +2,17 @@
 
 A walk-up kiosk for Play Laser Tag (T-49, Hauz Khas Village, New Delhi). Customers can book by voice, by touch, or both, and every booking goes through an authoritative FastAPI booking engine.
 
-**Current phase:** Phase 1, Discovery and Planning. No application code has been written yet, by design. See [PROJECT_STATUS.md](PROJECT_STATUS.md).
+**Current phase:** Phase 5, build. Backend, kiosk (touch + voice) and admin dashboard are working; see [PROJECT_STATUS.md](PROJECT_STATUS.md).
+
+## Apps
+
+| Folder | What | Dev command | Port |
+|---|---|---|---|
+| `backend/` | FastAPI API, booking engine, voice gateway, worker | `.venv/Scripts/python -m uvicorn app.main:create_app --factory --reload --port 8011` | 8011 |
+| `kiosk/` | Customer kiosk (touch + voice + presence) | `npm run dev` (set `KIOSK_BACKEND_URL` in `kiosk/.env.local`) | 5173 |
+| `admin/` | Staff/owner dashboard | `npm run dev` (set `ADMIN_BACKEND_URL` in `admin/.env.local`) | 5175 |
+
+Both frontends call the backend through the Vite dev proxy, so the browser sees one origin. API keys live only in `backend/.env` and never reach a browser.
 
 ## Where to start
 

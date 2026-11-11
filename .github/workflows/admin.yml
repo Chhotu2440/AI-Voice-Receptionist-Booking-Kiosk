@@ -1,0 +1,57 @@
+name: admin
+
+on:
+  push:
+    branches: [main]
+    paths: ["admin/**", "backend/**", ".github/workflows/admin.yml"]
+  pull_request:
+    paths: ["admin/**", "backend/**", ".github/workflows/admin.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  admin:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: admin
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: admin/package-lock.json
+      - name: Install backend (for end-to-end tests)
+        run: pip install -e "../backend[dev]"
+      - name: Install admin app
+        run: npm ci
+      - name: Type-check
+        run: npm run typecheck
+      - name: Unit tests
+        run: npm test
+      - name: Build
+        run: npm run build
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: End-to-end (real backend + admin UI)
+        env:
+          E2E_PYTHON: python
+          E2E_ADMIN_PASSWORD: ci-e2e-only-password-0123
+        run: npx playwright test
+      - name: Report E2E failures
+        if: failure()
+        run: python ../.github/scripts/junit_annotations.py e2e-results.xml
+      - name: Upload Playwright traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: admin/test-results/
+          retention-days: 7

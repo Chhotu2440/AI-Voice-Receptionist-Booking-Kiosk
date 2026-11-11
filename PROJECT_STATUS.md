@@ -1,6 +1,18 @@
 # Project Status
 
-**Updated:** 2026-11-11 · **Phase:** 5, Sprint 4 in progress (presence ✅, voice ✅, WhatsApp ✅, AI cost caps ✅; human voice test pending) · **Overall:** 🟢
+**Updated:** 2026-11-11 · **Phase:** 5, Sprint 5 (admin dashboard) in progress; Sprint 4 done except the human voice test · **Overall:** 🟢
+
+## Sprint 5 PM report: admin dashboard (milestone 1)
+- **Done:** new `admin/` app (React + TS + Tailwind + TanStack Query), light/dark, works on desktop, tablet and phone.
+  - **Sign-in:** access token in memory only; the session survives reloads through the existing httpOnly refresh cookie. Menus and pages follow the user's role (e.g. front desk can't open Kiosks).
+  - **Dashboard** (`GET /admin/dashboard`, new): today's schedule, next 7 days, revenue from the price quoted at booking, cancellations, bookings per day, kiosk funnel (started → booked), popular packages, occasions, channels, kiosks online, voice AI spend vs caps.
+  - **Bookings:** search by reference/phone or date/status; details with price breakdown, WhatsApp delivery status and history; front-desk booking (live slots → hold → book); reschedule (repriced); cancel; completed/no-show after the start time.
+  - **Event enquiries:** pipeline board (New → Contacted → Quoted → Won/Lost) with staff notes.
+  - **Kiosks:** pair (one-time code), online/offline and last check-in, per-kiosk voice/volume/camera/timeouts, disable/enable.
+  - **AI & voice cost:** sessions, cost (₹/$), per session and per voice booking, daily/monthly cap bars, owner-only budget form.
+- **Tests:** backend 176 passed (2 new dashboard tests); admin unit 3 passed; admin E2E 2 passed against a real backend (owner books + cancels + reload keeps session; staff role is restricted). New CI workflow `admin.yml`.
+- **Checked in the browser:** sign-in, dashboard, new booking, reschedule (weekday ₹1,200 → weekend ₹1,600), kiosk pairing and settings, AI page, light/dark, phone width.
+- **Not in this milestone:** packages/pricing/schedule screens (ADMIN-02), customers (export/anonymize), users & audit log, 2FA (CORE-05).
 
 ## Sprint 4 progress
 - **Done:** on-device presence detection (CAM-01/02), unit + E2E tested.

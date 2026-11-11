@@ -16,7 +16,7 @@ from app.core.exceptions import NotFoundError, ValidationFailed
 from app.models.identity import User
 from app.models.notification import NotificationLog
 from app.schemas.common import Page, PageParams
-from app.services import ai_usage_service, notification_service
+from app.services import ai_usage_service, dashboard_service, notification_service
 
 router = APIRouter(tags=["notifications"])
 
@@ -90,3 +90,18 @@ async def list_notifications(
         page_size=paging.page_size,
         total=int(total),
     )
+
+
+@router.get("/admin/dashboard")
+async def dashboard(
+    session: SessionDep,
+    date_from: Annotated[dt.date | None, Query(alias="from")] = None,
+    date_to: Annotated[dt.date | None, Query(alias="to")] = None,
+    _: User = Depends(require_permission("dashboard.read")),
+) -> dict[str, Any]:
+    """Owner dashboard: bookings, snapshot revenue, kiosk funnel, packages, AI cost (doc 14 §4)."""
+    default_from, default_to = ai_usage_service.default_range()
+    date_from, date_to = date_from or default_from, date_to or default_to
+    if date_to < date_from or (date_to - date_from).days > 366:
+        raise ValidationFailed("Choose a range of at most one year, with 'from' before 'to'.")
+    return await dashboard_service.summary(session, date_from, date_to)

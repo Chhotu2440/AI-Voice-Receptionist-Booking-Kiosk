@@ -34,3 +34,8 @@ kiosk/e2e-results.xml
 *.tsbuildinfo
 kiosk/public/mediapipe/
 backend/bakeoff-results/
+
+# Admin build/test output
+admin/test-results/
+admin/playwright-report/
+admin/e2e-results.xml

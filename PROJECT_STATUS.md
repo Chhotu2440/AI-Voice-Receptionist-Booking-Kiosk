@@ -1,15 +1,24 @@
 # Project Status
 
-**Updated:** 2026-11-11 · **Phase:** 5, Sprint 4 in progress (presence ✅, voice gateway ✅, live voice test pending) · **Overall:** 🟢
+**Updated:** 2026-11-11 · **Phase:** 5, Sprint 4 in progress (presence ✅, voice ✅, WhatsApp ✅, AI cost caps ✅; human voice test pending) · **Overall:** 🟢
 
 ## Sprint 4 progress
 - **Done:** on-device presence detection (CAM-01/02), unit + E2E tested.
-- **Done:** voice gateway, provider interface, OpenAI Realtime + Gemini Live adapters, 19 allowlisted tools, barge-in, touch-only fallback, kiosk mic/playback client. Voice is on by default.
-- **Verified live (2026-11-11):** both providers complete a full voice booking up to the summary in English and Hinglish, from real streamed audio, with correct phone numbers, prices and times. Results are in [docs/11 §5](docs/11-voice-provider-comparison.md).
-  - Gemini: faster (p50 1.5 s), more natural Hinglish, ≈ ₹8/session.
-  - OpenAI: cheaper (≈ ₹6.4/session), slower (p50 2.1–2.7 s), replies only in English.
-- **Not yet verified:** the kiosk browser voice path with a real laptop mic (mic capture, playback, barge-in timing); human speakers; noise.
-- **Next:** in-browser voice test on the laptop, bake-off round 2 with human speakers, then VOICE-06 (usage logged to the DB, spend alerts).
+- **Done:** voice gateway, provider interface, OpenAI Realtime + Gemini Live adapters, 19 allowlisted tools, barge-in, touch-only fallback, kiosk mic/playback client. Gemini Live is the default.
+- **Verified live (2026-11-11):** both providers complete a full voice booking in English and Hinglish from real streamed audio ([docs/11 §5](docs/11-voice-provider-comparison.md)).
+- **Fixed after the first laptop trial (2026-11-11):**
+  - Presence: relaxed detection; a short look-away no longer resets the session (reset only after 20 s away *and* 15 s without touch or speech).
+  - Background noise no longer completes steps: a speech gate blocks every state-changing tool unless the customer actually said words. Gemini noise test: 0 tool calls in 12 s of noise.
+  - Audio overlap: mic gate with noise floor and barge-in threshold; playback flushed on barge-in; echo cancellation through a media-stream audio element.
+  - Replies are in English or Hindi only, on screen too. The assistant explains the packages and recommends one.
+  - The WhatsApp confirmation box is ticked by default.
+  - New animated robot assistant: talking mouth driven by the voice level, blinking eyes, "listening" ears.
+- **Done:** INT-01 WhatsApp booking confirmations via Interakt (queued in the booking transaction, retries, delivery webhooks). Webhook URL is protected by a secret token, because Interakt's webhook signing isn't documented.
+- **Done:** VOICE-06, every voice session's tokens and cost saved (`ai_usage_logs`), an admin usage report at `GET /admin/ai/usage`, and owner-editable daily/monthly caps ($10 / $120 by default). Over the cap the kiosk stays on touch only.
+- **Not yet verified:** the kiosk voice path on the laptop with real people talking, after these fixes; live Interakt sending (needs the API key and an approved template).
+- **Note:** the kiosk connects only from an origin listed in `CORS_ORIGINS` (e.g. `http://localhost:5173`).
+- **Waiting on business:** Interakt API key, approved `booking_confirmation` template (8 body variables, see docs/23 §8), webhook secret.
+- **Next:** laptop retest + bake-off round 2 with human speakers, then the admin dashboard UI (ADMIN-01..05) and kiosk resilience (KIOSK-06).
 
 ---
 

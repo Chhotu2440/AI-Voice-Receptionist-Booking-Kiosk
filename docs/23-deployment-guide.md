@@ -28,6 +28,17 @@ PR: lint → type-check → unit → integration (MySQL+Redis services) → fron
 - Chrome enterprise policies: `VideoCaptureAllowedUrls`, `AudioCaptureAllowedUrls`, disable devtools, disable translate prompts, homepage = kiosk URL.
 - Auto-start on boot, auto-login kiosk user, nightly reboot at 04:00, OS updates scheduled outside business hours.
 - The kiosk app is served from the server (always the latest version). A service worker allows an offline shell.
+- **Self-healing layers (KIOSK-06):**
+  1. **Browser restart:** `scripts/kiosk/kiosk-browser.service` (Ubuntu, systemd `Restart=always`) or `scripts/kiosk/start-kiosk.ps1` (Windows, Task Scheduler at logon) reopens the browser within seconds if it crashes or is closed.
+  2. **Frozen page:** the service worker reloads the page if it stops sending "alive" signals for 12 s.
+  3. **Crashed screen:** a render error shows "Restarting…" (EN/HI) and reloads after 5 s.
+  4. **Network:** a reload with no network still shows the kiosk with the "Reconnecting" banner (cached shell); a socket with no reply for 40 s is treated as dead and reconnected; after 5 min offline the page reloads once the shell is cached.
+  5. **Updates and memory:** a new build is picked up the next time the kiosk is idle for 10 s; the page also refreshes once a day while idle.
+  Every reload starts at IDLE with an empty store, so no customer data survives.
+- **Nginx headers for the kiosk build** (required, or kiosks may keep an old version):
+  `location = /sw.js { add_header Cache-Control "no-cache"; }`, `location = /index.html { add_header Cache-Control "no-cache"; }`,
+  `location /assets/ { add_header Cache-Control "public, max-age=31536000, immutable"; }`. The service worker needs HTTPS (localhost is exempt for development).
+- The service worker is only registered in production builds (`npm run build`); `npm run dev` runs without it.
 
 ## 6. Voice streaming decision
 Relay through our backend (ADR-005); provider keys never leave the server. If we switch to direct WebRTC (ADR-005b), the backend issues **short-lived ephemeral tokens** (OpenAI client secrets / Gemini ephemeral tokens), each scoped to one session with a ≤ 1 min start window.

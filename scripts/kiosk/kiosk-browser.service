@@ -1,0 +1,19 @@
+# Ubuntu 24.04 kiosk: restarts Chromium if it crashes or is closed (KIOSK-06 "browser watchdog").
+# Install for the auto-login kiosk user:
+#   mkdir -p ~/.config/systemd/user && cp kiosk-browser.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now kiosk-browser.service
+# Set KIOSK_URL below to the kiosk address (HTTPS is required for the service worker and the camera/mic).
+[Unit]
+Description=Play Laser Tag kiosk browser
+After=graphical-session.target network-online.target
+PartOf=graphical-session.target
+
+[Service]
+Environment=KIOSK_URL=https://kiosk.example.com/
+ExecStart=/usr/bin/chromium --kiosk --noerrdialogs --disable-session-crashed-bubble --disable-infobars \
+  --autoplay-policy=no-user-gesture-required --check-for-update-interval=31536000 ${KIOSK_URL}
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=graphical-session.target

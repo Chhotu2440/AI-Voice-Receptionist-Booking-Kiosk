@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "./components/ui";
 import { ApiError, deviceToken, heartbeat, loadCreds, saveCreds } from "./lib/api";
+import { bootedAt, isUpdateReady, reloadKiosk, reloadReason, shellIsCached } from "./lib/resilience";
 import { KioskSocket } from "./lib/socket";
 import { usePresence } from "./lib/usePresence";
 import { useVoice } from "./lib/useVoice";
@@ -136,6 +137,31 @@ function Kiosk({ onUnpaired }: { onUnpaired: () => void }) {
     }, 1000);
     return () => window.clearInterval(id);
   }, [kioskState, idleTimeout, send]);
+
+  // Self-healing reloads (KIOSK-06): new build while idle, a long outage, or once a day while idle.
+  const offlineSince = useRef<number | null>(null);
+  const idleSince = useRef<number | null>(Date.now());
+  useEffect(() => {
+    offlineSince.current = conn === "online" ? null : (offlineSince.current ?? Date.now());
+  }, [conn]);
+  useEffect(() => {
+    idleSince.current = kioskState === "IDLE" ? (idleSince.current ?? Date.now()) : null;
+  }, [kioskState]);
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      const reason = reloadReason({
+        now: Date.now(),
+        bootedAt,
+        state: useKiosk.getState().state?.state ?? "IDLE",
+        idleSince: idleSince.current,
+        offlineSince: offlineSince.current,
+        updateReady: isUpdateReady(),
+        canRecover: shellIsCached(),
+      });
+      if (reason) reloadKiosk(reason);
+    }, 5_000);
+    return () => window.clearInterval(id);
+  }, []);
 
   const Current = SCREENS[kioskState];
   return (

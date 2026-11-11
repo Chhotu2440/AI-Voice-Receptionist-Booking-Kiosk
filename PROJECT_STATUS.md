@@ -2,6 +2,20 @@
 
 **Updated:** 2026-11-11 · **Phase:** 5, Sprint 5 admin dashboard complete (ADMIN-01…04); Sprint 4 done except the human voice test · **Overall:** 🟢
 
+## KIOSK-06 PM report: kiosk resilience (done)
+- **Offline shell:** a service worker (production builds only) caches the app. A reload with no network shows the kiosk and the "Reconnecting" banner instead of a browser error page. API and WebSocket traffic is never cached, so no customer data is stored.
+- **Frozen page:** the page sends "alive" every 2 s; after 12 s of silence the service worker reloads it.
+- **Crashed screen:** a render error shows "Restarting…" in English and Hindi and reloads after 5 s.
+- **Dead connection:** a socket with no reply (not even a pong) for 40 s is closed and reconnected. Before, a half-open socket after a Wi-Fi drop could look online forever.
+- **Planned reloads, all landing on IDLE with an empty store:**
+  - a new build, once the kiosk has been idle for 10 s;
+  - after 5 min offline, but only if the shell is cached;
+  - once a day while idle.
+- **Browser restart:** `scripts/kiosk/` has a systemd unit (Ubuntu) and a Task Scheduler script (Windows) that reopen Chrome if it closes. Deployment notes cover them and the required Nginx cache headers (docs/23 §5).
+- **Bug found while testing and fixed:** offline, cached scripts weren't found because the server sends `Vary: Origin`; cache lookups now ignore Vary.
+- **Tests:** kiosk unit 20 passed (+7); kiosk E2E 8 passed, including 2 new ones against the real production build: offline reload shows the kiosk and recovers (REL-K-001); a page frozen for 20 s is reloaded (REL-K-002).
+- **Not verified:** the browser-restart scripts on real kiosk hardware (they need the target OS).
+
 ## Sprint 5 PM report: admin milestone 3: packages, pricing, schedule (ADMIN-02)
 - **Packages:** create/edit (English + Hindi names, descriptions, "what's included" points), duration, player range, order, recommended, show/hide on kiosk, delete (existing bookings keep it). Occasions: rename, mark "needs a quote", show/hide.
 - **Pricing:**

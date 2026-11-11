@@ -3,9 +3,14 @@ import type { ServerMessage } from "../types";
 type Listener = (msg: ServerMessage) => void;
 type StatusListener = (status: "connecting" | "online" | "offline") => void;
 
+export const PING_EVERY_MS = 15_000;
+export const DEAD_AFTER_MS = 40_000;
+
 /**
  * WebSocket client for /ws/kiosk.
  * - Authenticates with the device JWT in the first frame (never in the URL).
+ * - Detects a dead connection (no frame, not even a pong, for DEAD_AFTER_MS) and reconnects; a half-open
+ *   socket after a Wi-Fi drop otherwise looks "online" forever.
  * - Reconnects with backoff. It resumes only the session id this page instance saw; after a reload the id
  *   is gone, so the server ends the old session and nobody sees the previous customer's details.
  */
@@ -15,6 +20,7 @@ export class KioskSocket {
   private closed = false;
   private pingTimer: number | undefined;
   private seq = 0;
+  private lastFrameAt = 0;
   resumeSessionId: string | null = null;
 
   constructor(
@@ -39,10 +45,18 @@ export class KioskSocket {
     ws.onopen = () => {
       ws.send(JSON.stringify({ type: "auth", token, resume_session_id: this.resumeSessionId }));
       this.retry = 0;
+      this.lastFrameAt = Date.now();
       this.onStatus("online");
-      this.pingTimer = window.setInterval(() => this.raw({ type: "ping" }), 20_000);
+      this.pingTimer = window.setInterval(() => {
+        if (Date.now() - this.lastFrameAt > DEAD_AFTER_MS) {
+          ws.close(); // onclose -> offline banner + reconnect
+          return;
+        }
+        this.raw({ type: "ping" });
+      }, PING_EVERY_MS);
     };
     ws.onmessage = (ev) => {
+      this.lastFrameAt = Date.now();
       try {
         const msg = JSON.parse(String(ev.data)) as ServerMessage;
         if (msg.type === "state") this.resumeSessionId = msg.state.session_id;

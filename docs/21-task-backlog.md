@@ -31,7 +31,7 @@ Statuses: BACKLOG · READY · IN_PROGRESS · BLOCKED · IN_REVIEW · TESTING · 
 | KIOSK-03 | Screens 1–9 | Idle → package discovery | P0 | Frontend | KIOSK-02 | 2.5 | Component tests | COMPLETED | FE |
 | KIOSK-04 | Screens 10–18 | Date → reset, hold countdown, errors | P0 | Frontend | KIOSK-03 | 2.5 | Component tests | COMPLETED | FE |
 | KIOSK-05 | Touch-only E2E | Playwright booking happy + edge paths | P0 | QA | KIOSK-04 | 1 | E2E-* pass | COMPLETED | FE |
-| KIOSK-06 | Resilience | Watchdog, offline shell, reset on boot, no persistence | P0 | Frontend | KIOSK-04 | 1 | REL-* tests pass | IN_PROGRESS (done: no PII persistence, reload→idle, reconnect/resume, inactivity reset, offline banner; pending: service-worker offline shell, frozen-UI watchdog) | FE |
+| KIOSK-06 | Resilience | Watchdog, offline shell, reset on boot, no persistence | P0 | Frontend | KIOSK-04 | 1 | REL-* tests pass | COMPLETED (no PII persistence, reload→idle, reconnect/resume, inactivity reset, offline banner, service-worker offline shell, frozen-page watchdog, crash restart, dead-socket detection, browser restart scripts) | FE |
 | CAM-01 | Presence detection | MediaPipe face detector, thresholds, events | P1 | Frontend | KIOSK-01 | 1.5 | Presence protocol: ≥ 95% true starts, ≤ 1 false start/hour | BACKLOG | FE |
 | CAM-02 | Camera health & fallback | Errors → manual start + alert | P1 | Frontend | CAM-01 | 0.5 | Unplug test | BACKLOG | FE |
 | VOICE-01 | Provider bake-off | Harness, eval set recording, both adapters (minimal), scorecard | P0 | Voice | KIOSK-02, hardware | 4 | Scorecard; ADR-007 accepted | BACKLOG | VO |

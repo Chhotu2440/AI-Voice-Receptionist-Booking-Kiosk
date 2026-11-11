@@ -9,13 +9,19 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
 import App from "./App";
+import { CrashGuard } from "./components/CrashGuard";
+import { registerServiceWorker } from "./lib/resilience";
 
 // Kiosk hardening: no context menu, no pinch zoom.
 window.addEventListener("contextmenu", (e) => e.preventDefault());
 document.addEventListener("gesturestart", (e) => e.preventDefault());
 
+registerServiceWorker();
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
+    <CrashGuard>
+      <App />
+    </CrashGuard>
   </StrictMode>,
 );

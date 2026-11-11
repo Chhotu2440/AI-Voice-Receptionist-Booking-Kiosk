@@ -3,6 +3,7 @@ import { defineConfig, devices } from "@playwright/test";
 // End-to-end: real backend (throwaway SQLite) + real kiosk UI, driven by touch-style clicks at kiosk size.
 const BACKEND_PORT = 8012;
 const KIOSK_PORT = 5174;
+const PROD_PORT = 5178; // production build (service worker active) for KIOSK-06 resilience tests
 const python = process.env.E2E_PYTHON ?? "python";
 export const ADMIN = {
   email: "e2e-owner@example.com",
@@ -39,7 +40,18 @@ export default defineConfig({
   projects: [
     {
       name: "kiosk-1080p",
+      testIgnore: /resilience.*\.spec\.ts/,
       use: { ...devices["Desktop Chrome"], viewport: { width: 1920, height: 1080 }, hasTouch: true },
+    },
+    {
+      name: "kiosk-prod-build",
+      testMatch: /resilience.*\.spec\.ts/,
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 1920, height: 1080 },
+        hasTouch: true,
+        baseURL: `http://127.0.0.1:${PROD_PORT}`,
+      },
     },
   ],
   webServer: [
@@ -57,6 +69,13 @@ export default defineConfig({
       url: `http://127.0.0.1:${KIOSK_PORT}`,
       reuseExistingServer: false,
       timeout: 120_000,
+    },
+    {
+      command: `node scripts/copy-mediapipe.mjs && npx vite build && npx vite preview --host 127.0.0.1 --port ${PROD_PORT} --strictPort`,
+      env: { KIOSK_BACKEND_URL: `http://127.0.0.1:${BACKEND_PORT}` },
+      url: `http://127.0.0.1:${PROD_PORT}`,
+      reuseExistingServer: false,
+      timeout: 180_000,
     },
   ],
 });

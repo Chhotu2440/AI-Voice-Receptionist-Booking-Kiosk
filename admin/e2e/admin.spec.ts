@@ -99,3 +99,78 @@ test("ADM-E2E-002: owner adds front-desk staff, who only see what their role all
   await page.goto("/users");
   await expect(page.getByText("No access")).toBeVisible();
 });
+
+test("ADM-E2E-003: owner adds a package, prices it, adds a festival price, and closes a day with a booking warning", async ({ page }) => {
+  await signIn(page, OWNER.email, OWNER.password);
+  const code = `E2E_${Date.now().toString().slice(-6)}`;
+
+  // New package (hidden prices until set).
+  await page.getByRole("link", { name: "Packages" }).click();
+  await page.getByTestId("add-package").click();
+  await page.getByLabel("Name (English)").fill("Night Ops");
+  await page.getByLabel("Code").fill(code);
+  await page.getByLabel("Minutes").fill("45");
+  await page.getByLabel("Min players").fill("2");
+  await page.getByLabel("Max players").fill("12");
+  await page.getByRole("button", { name: "+ Add point" }).click();
+  await page.getByLabel("Feature 1 (English)").fill("Glow vests");
+  await page.getByTestId("save-package").click();
+  await expect(page.getByTestId(`package-row-${code}`)).toContainText("Night Ops");
+
+  // Regular prices: weekday 500, weekend 650.
+  await page.getByRole("link", { name: "Pricing" }).click();
+  await page.getByLabel("Night Ops weekday price").fill("500");
+  await page.getByLabel("Night Ops weekend price").fill("650");
+  await page.getByTestId("save-base-prices").click();
+  await expect(page.getByText("Saved.").first()).toBeVisible();
+
+  // Price check uses the real engine: 4 players on a Monday = ₹2,000.
+  const monday = nextMonday();
+  const preview = page.getByTestId("price-preview");
+  await preview.getByLabel("Package").selectOption({ label: "Night Ops" });
+  await preview.getByLabel("Date").fill(monday);
+  await preview.getByLabel("Players").fill("4");
+  await expect(page.getByTestId("preview-total")).toHaveText("₹2,000");
+
+  // A one-day festival price beats the weekday price.
+  await page.getByTestId("add-rule").click();
+  await page.getByLabel("Name (staff only)").fill("Festival day");
+  await page.locator("#r-pkg").selectOption({ label: "Night Ops" });
+  await page.locator("#r-from").fill(monday);
+  await page.getByLabel("Price per player (₹)").fill("800");
+  await page.getByTestId("save-rule").click();
+  await expect(page.getByTestId("rule-Festival day")).toContainText("₹800 / player");
+  await expect(page.getByTestId("preview-total")).toHaveText("₹3,200");
+
+  // Book that Monday at the front desk, then try to close the day: staff see the clash first.
+  await page.getByRole("link", { name: "Bookings" }).click();
+  await page.getByTestId("new-booking").click();
+  await page.getByLabel("Package").selectOption({ label: "Night Ops · 45 min · 2–12 players" });
+  await page.getByLabel("Players").fill("4");
+  await page.getByLabel("Date", { exact: true }).fill(monday);
+  await page.getByTestId("slot-12:00").click();
+  await page.getByLabel("Customer name").fill("Kabir Rao");
+  await page.getByLabel("Mobile").fill("9822233344");
+  await page.getByTestId("create-booking").click();
+  await expect(page.getByTestId("booking-detail")).toContainText("₹3,200");
+  await page.keyboard.press("Escape");
+
+  await page.getByRole("link", { name: "Schedule" }).click();
+  await page.getByTestId("add-exception").click();
+  await page.getByLabel("Date").fill(monday);
+  await expect(page.getByTestId("exception-clash")).toContainText("Kabir Rao");
+  await page.getByLabel("Reason (staff only)").fill("Private event");
+  await page.getByTestId("save-exception").click();
+  await expect(page.getByTestId(`exception-${monday}`)).toContainText("Closed all day");
+
+  // The kiosk can no longer sell that date.
+  const slots = await page.request.post("/api/v1/availability/slots", {
+    data: { package_id: await packageId(page, code), date: monday, guest_count: 4 },
+  });
+  expect((await slots.json()).status).toBe("CLOSED");
+});
+
+async function packageId(page: Page, code: string): Promise<string> {
+  const r = await page.request.get("/api/v1/packages");
+  return ((await r.json()) as { id: string; code: string }[]).find((p) => p.code === code)!.id;
+}

@@ -12,6 +12,9 @@ import { DashboardPage } from "./pages/Dashboard";
 import { EnquiriesPage } from "./pages/Enquiries";
 import { KiosksPage } from "./pages/Kiosks";
 import { Login } from "./pages/Login";
+import { PackagesPage } from "./pages/Packages";
+import { PricingPage } from "./pages/Pricing";
+import { SchedulePage } from "./pages/Schedule";
 import { UsersPage } from "./pages/Users";
 
 function Guard({ perm, children }: { perm: string; children: ReactNode }) {
@@ -44,6 +47,9 @@ export function App() {
         <Route path="customers" element={<Guard perm="customer.read"><CustomersPage /></Guard>} />
         <Route path="users" element={<Guard perm="user.manage"><UsersPage /></Guard>} />
         <Route path="audit" element={<Guard perm="audit.read"><AuditPage /></Guard>} />
+        <Route path="packages" element={<Guard perm="catalogue.write"><PackagesPage /></Guard>} />
+        <Route path="pricing" element={<Guard perm="pricing.write"><PricingPage /></Guard>} />
+        <Route path="schedule" element={<Guard perm="schedule.read"><SchedulePage /></Guard>} />
         <Route path="kiosks" element={<Guard perm="kiosk.manage"><KiosksPage /></Guard>} />
         <Route path="ai" element={<Guard perm="dashboard.read"><AiUsagePage /></Guard>} />
         <Route path="*" element={<Navigate to="/" replace />} />

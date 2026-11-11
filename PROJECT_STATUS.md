@@ -1,6 +1,22 @@
 # Project Status
 
-**Updated:** 2026-11-11 · **Phase:** 5, Sprint 5 (admin dashboard) in progress; Sprint 4 done except the human voice test · **Overall:** 🟢
+**Updated:** 2026-11-11 · **Phase:** 5, Sprint 5 admin dashboard complete (ADMIN-01…04); Sprint 4 done except the human voice test · **Overall:** 🟢
+
+## Sprint 5 PM report: admin milestone 3: packages, pricing, schedule (ADMIN-02)
+- **Packages:** create/edit (English + Hindi names, descriptions, "what's included" points), duration, player range, order, recommended, show/hide on kiosk, delete (existing bookings keep it). Occasions: rename, mark "needs a quote", show/hide.
+- **Pricing:**
+  - **Price check:** asks the real pricing engine what a customer would pay (package, date, players, promo code). It refreshes after every pricing change.
+  - **Regular prices:** a weekday/weekend price grid per package. Empty cells are highlighted, because the kiosk can't sell a package without a price.
+  - **Special prices & discounts:** one-day festival price, date-range price, promotions (automatic or with a code), group discounts; switch on/off.
+  - **Tax & charges:** weekend days, GST rate, prices including or excluding GST, biggest-discount-only or combined, extra charges.
+- **Schedule:**
+  - **Closures and blocks:** closed all day, special hours, block some hours, blackout. Before saving, it lists confirmed bookings in that time and warns they are **not** cancelled automatically.
+  - **Weekly hours:** with "copy Monday to all days".
+  - **Arena:** slot interval, gap between groups, players. Interval changes are refused while future bookings exist.
+  - **Owner only:** booking rules (days ahead, same-day cutoff, large-group threshold, hold time) and venue details.
+- **Bug found by the new E2E test and fixed:** the price check kept showing the old total after a special price was added.
+- **Tests:** admin E2E 3 passed. New ADM-E2E-003: create package, set prices, check ₹2,000, add a festival price, check ₹3,200, book that day, close the day (clash warning shown), then the kiosk API reports the date CLOSED.
+- **Not yet:** 2FA (CORE-05); bulk-moving bookings off a closed day.
 
 ## Sprint 5 PM report: admin milestone 2: customers, staff accounts, audit log
 - **Customers** (`/admin/customers`, new API): search by name, full phone or last digits; profile with bookings, enquiries, spend, current consents and consent history.

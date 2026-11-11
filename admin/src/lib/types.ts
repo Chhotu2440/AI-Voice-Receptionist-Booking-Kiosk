@@ -256,3 +256,102 @@ export type AuditEntry = {
   after: Record<string, unknown> | null;
   ip: string | null;
 };
+
+export type PackageFull = {
+  id: string;
+  code: string;
+  name_en: string;
+  name_hi: string;
+  description_en: string;
+  description_hi: string;
+  duration_min: number;
+  games_count: number | null;
+  formats_count: number | null;
+  min_guests: number;
+  max_guests: number;
+  is_recommended: boolean;
+  sort_order: number;
+  is_active: boolean;
+  features: { text_en: string; text_hi: string }[];
+};
+
+export type OccasionFull = {
+  code: string;
+  label_en: string;
+  label_hi: string;
+  always_enquiry: boolean;
+  extra_fields_schema: Record<string, unknown>[];
+  sort_order: number;
+  is_active: boolean;
+};
+
+export type RuleType = "BASE_DAYTYPE" | "DATE_OVERRIDE" | "DATE_RANGE" | "PROMO" | "GROUP_DISCOUNT";
+
+export type PricingRule = {
+  id: string;
+  package_id: string | null;
+  rule_type: RuleType;
+  name: string;
+  day_type: "WEEKDAY" | "WEEKEND" | null;
+  date_from: string | null;
+  date_to: string | null;
+  min_guests: number | null;
+  promo_code: string | null;
+  price_per_person: string | null;
+  discount_pct: string | null;
+  priority: number;
+  is_active: boolean;
+  valid_from: string | null;
+  valid_to: string | null;
+};
+
+export type PricingSettings = {
+  weekend_days: string[];
+  tax_rate: string;
+  prices_include_tax: boolean;
+  discount_stacking: "BEST" | "STACK";
+  extra_charges: { code: string; label: string; mode: "FLAT" | "PER_PERSON"; amount: string }[];
+  currency: "INR";
+};
+
+export type BookingSettings = {
+  max_days_ahead: number;
+  same_day_cutoff_min: number;
+  large_group_threshold: number;
+  hold_ttl_seconds: number;
+};
+
+export type HoursDay = { weekday: number; open_time: string; close_time: string; is_closed: boolean };
+
+export type ScheduleException = {
+  id: string;
+  type: "HOLIDAY" | "SPECIAL_HOURS" | "BLACKOUT" | "MANUAL_BLOCK";
+  date: string;
+  start_time: string | null;
+  end_time: string | null;
+  resource_id: string | null;
+  reason: string;
+};
+
+export type Resource = {
+  id: string;
+  name: string;
+  capacity_mode: "EXCLUSIVE" | "SHARED_SEATS";
+  default_capacity: number;
+  max_players: number;
+  slot_interval_min: number;
+  buffer_min: number;
+  is_active: boolean;
+};
+
+export type BusinessInfo = {
+  name: string;
+  address: string;
+  city: string;
+  postal_code: string;
+  timezone: string;
+  phone: string;
+  whatsapp: string;
+  email: string;
+  maps_url: string;
+};

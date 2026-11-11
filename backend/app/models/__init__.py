@@ -1,5 +1,6 @@
 """Import all models so Base.metadata is complete (used by Alembic and tests)."""
 
+from app.models.ai import AiUsageLog
 from app.models.audit import AuditLog, SystemSetting
 from app.models.booking import (
     AvailabilitySlot,
@@ -22,6 +23,7 @@ from app.models.notification import NotificationLog, WebhookEvent
 from app.models.schedule import BusinessHours, BusinessLocation, Resource, ScheduleException
 
 __all__ = [
+    "AiUsageLog",
     "AuditLog",
     "AvailabilitySlot",
     "Booking",

@@ -49,7 +49,53 @@ class BookingSettings(BaseModel):
     hold_ttl_seconds: int = Field(default=300, ge=60, le=1800)
 
 
+class ModelPrice(BaseModel):
+    """USD per 1M tokens (official price pages; update here when providers change prices)."""
+
+    model_config = ConfigDict(extra="forbid")
+    audio_in: Decimal = Field(ge=0)
+    audio_out: Decimal = Field(ge=0)
+    text_in: Decimal = Field(ge=0)
+    text_cached: Decimal = Field(ge=0)
+    text_out: Decimal = Field(ge=0)
+
+
+class AiSettings(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    daily_cap_usd: Decimal = Field(default=Decimal("10"), ge=0)
+    monthly_cap_usd: Decimal = Field(default=Decimal("120"), ge=0)  # ~INR 10,000 (doc 12)
+    usd_inr: Decimal = Field(default=Decimal("88"), gt=0)
+    price_version: str = "2026-11-10"
+    prices: dict[str, ModelPrice] = Field(
+        default_factory=lambda: {
+            "gemini-3.8-live": ModelPrice(
+                audio_in=Decimal("3"),
+                audio_out=Decimal("12"),
+                text_in=Decimal("0.75"),
+                text_cached=Decimal("0.75"),
+                text_out=Decimal("4.5"),
+            ),
+            "gpt-realtime-2.1-mini": ModelPrice(
+                audio_in=Decimal("10"),
+                audio_out=Decimal("20"),
+                text_in=Decimal("0.6"),
+                text_cached=Decimal("0.06"),
+                text_out=Decimal("2.4"),
+            ),
+            "gpt-realtime-2.1": ModelPrice(
+                audio_in=Decimal("32"),
+                audio_out=Decimal("64"),
+                text_in=Decimal("4"),
+                text_cached=Decimal("0.4"),
+                text_out=Decimal("24"),
+            ),
+        }
+    )
+
+
 SETTINGS_MODELS: dict[str, type[BaseModel]] = {
     "pricing": PricingSettings,
     "booking": BookingSettings,
+    "ai": AiSettings,
 }

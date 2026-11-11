@@ -202,7 +202,7 @@ async def admin_price_preview(
 
 # --- settings ---------------------------------------------------------------------------------------
 
-SETTINGS_WRITE_PERMISSION = {"pricing": "pricing.write", "booking": "settings.write"}
+SETTINGS_WRITE_PERMISSION = {"pricing": "pricing.write", "booking": "settings.write", "ai": "ai.config"}
 
 
 @router.get("/settings/{section}")

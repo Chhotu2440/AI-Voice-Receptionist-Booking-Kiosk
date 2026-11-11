@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundError, ValidationFailed
 from app.models.audit import SystemSetting
-from app.schemas.settings import SETTINGS_MODELS, BookingSettings, PricingSettings
+from app.schemas.settings import SETTINGS_MODELS, AiSettings, BookingSettings, PricingSettings
 from app.services import audit_service
 from app.services.context import Actor
 from app.services.pricing_engine import WEEKDAY_CODES, ExtraCharge, PricingConfig
@@ -26,6 +26,10 @@ async def get_pricing_settings(session: AsyncSession) -> PricingSettings:
 
 async def get_booking_settings(session: AsyncSession) -> BookingSettings:
     return await _load(session, "booking", BookingSettings)
+
+
+async def get_ai_settings(session: AsyncSession) -> AiSettings:
+    return await _load(session, "ai", AiSettings)
 
 
 async def get_section(session: AsyncSession, key: str) -> BaseModel:

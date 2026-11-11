@@ -23,12 +23,15 @@ import time
 from collections.abc import Callable
 from typing import Any
 
+import anyio
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from app.api.deps import device_from_token
 from app.core.config import Settings
 from app.core.exceptions import DomainError
+from app.core.timeutil import utcnow
 from app.kiosk.flow import KioskFlow
+from app.services import ai_usage_service
 from app.services.kiosk_device_service import DEFAULT_CONFIG
 from app.voice.prompts import build_instructions, screen_note
 from app.voice.provider import (
@@ -64,6 +67,12 @@ def default_provider_factory(settings: Settings) -> VoiceProvider:
     return ScriptedProvider()
 
 
+def provider_model(settings: Settings, provider: str) -> str:
+    return {"openai": settings.openai_realtime_model, "gemini": settings.gemini_live_model}.get(
+        provider, provider
+    )
+
+
 @router.websocket("/ws/voice")
 async def voice_socket(ws: WebSocket) -> None:
     app_state = ws.app.state
@@ -97,6 +106,14 @@ async def voice_socket(ws: WebSocket) -> None:
         await ws.close(code=4409)
         return
 
+    async with app_state.sessionmaker() as db:
+        caps = await ai_usage_service.check_caps(db)
+    if not caps.allowed:
+        log.warning("voice_spend_cap", extra={"reason": caps.reason, "month_usd": str(caps.month_usd)})
+        await send_json({"type": "voice.unavailable", "reason": caps.reason})
+        await ws.close(code=4429)
+        return
+
     factory: ProviderFactory = getattr(app_state, "voice_provider_factory", None) or default_provider_factory
     try:
         provider = factory(settings)
@@ -116,6 +133,8 @@ async def voice_socket(ws: WebSocket) -> None:
     updates = flow.bus.subscribe(device_id)
     muted = False
     started = time.monotonic()
+    started_at = utcnow()
+    counters = {"tool_calls": 0, "tools_blocked": 0}
     await send_json(
         {
             "type": "voice.ready",
@@ -163,9 +182,11 @@ async def voice_socket(ws: WebSocket) -> None:
                 await send_json({"type": "caption", "role": ev.role, "text": ev.text, "final": ev.final})
             elif isinstance(ev, ToolCall):
                 await send_json({"type": "voice.status", "status": "thinking"})
+                counters["tool_calls"] += 1
                 if gate.allows(ev.name):
                     result = await executor.execute(ev.name, ev.arguments)
                 else:
+                    counters["tools_blocked"] += 1
                     log.info("voice_tool_blocked_no_speech", extra={"tool": ev.name})
                     result = dict(BLOCKED_RESULT)
                 await provider.send_tool_result(ev, result)
@@ -194,11 +215,14 @@ async def voice_socket(ws: WebSocket) -> None:
     async def deadline() -> None:
         await asyncio.sleep(max(1, settings.voice_max_session_seconds - (time.monotonic() - started)))
 
+    names = ("KIOSK_CLOSED", "PROVIDER_ENDED", "SESSION_ENDED", "TIME_LIMIT")
     tasks = [asyncio.create_task(c) for c in (from_kiosk(), from_provider(), from_screen(), deadline())]
+    end_reason = "ERROR"
     try:
-        await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        end_reason = next((names[i] for i, t in enumerate(tasks) if t in done), "ERROR")
     except WebSocketDisconnect:
-        pass
+        end_reason = "KIOSK_CLOSED"
     finally:
         for t in tasks:
             t.cancel()
@@ -219,5 +243,27 @@ async def voice_socket(ws: WebSocket) -> None:
                 "text_out_tokens": usage.text_out_tokens,
             },
         )
+
+        async def save_usage() -> None:
+            async with app_state.sessionmaker() as db:
+                await ai_usage_service.record(
+                    db,
+                    device_id=device_id,
+                    kiosk_session_id=state.session_id,
+                    provider=provider.name,
+                    model=provider_model(settings, provider.name),
+                    started_at=started_at,
+                    usage=usage,
+                    tool_calls=counters["tool_calls"],
+                    tools_blocked=counters["tools_blocked"],
+                    end_reason=end_reason,
+                )
+
+        try:
+            # anyio shield: Starlette cancels the handler on disconnect; never lose the cost record.
+            with anyio.CancelScope(shield=True):
+                await save_usage()
+        except Exception:  # usage logging must never break the kiosk
+            log.exception("voice_usage_record_failed")
         with contextlib.suppress(Exception):
             await ws.close()

@@ -5,9 +5,9 @@ from __future__ import annotations
 import datetime as dt
 import hmac
 import uuid
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import func, select
 
@@ -16,7 +16,7 @@ from app.core.exceptions import NotFoundError, ValidationFailed
 from app.models.identity import User
 from app.models.notification import NotificationLog
 from app.schemas.common import Page, PageParams
-from app.services import notification_service
+from app.services import ai_usage_service, notification_service
 
 router = APIRouter(tags=["notifications"])
 
@@ -51,6 +51,18 @@ async def interakt_webhook(
     if not isinstance(payload, dict):
         raise ValidationFailed("Invalid payload.")
     return {"status": await notification_service.handle_interakt_webhook(session, payload)}
+
+
+@router.get("/admin/ai/usage")
+async def ai_usage(
+    session: SessionDep,
+    date_from: Annotated[dt.date | None, Query(alias="from")] = None,
+    date_to: Annotated[dt.date | None, Query(alias="to")] = None,
+    _: User = Depends(require_permission("dashboard.read")),
+) -> dict[str, Any]:
+    """Voice sessions, measured cost (USD and INR), cost per voice booking, and spend-cap status."""
+    default_from, default_to = ai_usage_service.default_range()
+    return await ai_usage_service.summary(session, date_from or default_from, date_to or default_to)
 
 
 @router.get("/admin/notifications", response_model=Page[NotificationOut])

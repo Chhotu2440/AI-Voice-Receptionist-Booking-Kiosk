@@ -74,6 +74,13 @@ class HoldStatusOut(BaseModel):
     can_extend: bool
 
 
+def clean_person_name(v: str) -> str:
+    v = " ".join(v.split())
+    if not v or any(ch.isdigit() for ch in v) or any(ch in "<>{}[]\\/@#$%^*=_|~`" for ch in v):
+        raise ValueError("name may contain letters, spaces and . ' - only")
+    return v
+
+
 class CustomerIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
     name: str = Field(min_length=1, max_length=80)
@@ -82,10 +89,7 @@ class CustomerIn(BaseModel):
     @field_validator("name")
     @classmethod
     def _name(cls, v: str) -> str:
-        v = " ".join(v.split())
-        if not v or any(ch.isdigit() for ch in v) or any(ch in "<>{}[]\\/@#$%^*=_|~`" for ch in v):
-            raise ValueError("name may contain letters, spaces and . ' - only")
-        return v
+        return clean_person_name(v)
 
 
 class ConsentsIn(BaseModel):

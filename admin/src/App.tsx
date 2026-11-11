@@ -5,11 +5,14 @@ import { Layout, NAV } from "./components/Layout";
 import { Loading } from "./components/ui";
 import { useAuth } from "./lib/auth";
 import { AiUsagePage } from "./pages/AiUsage";
+import { AuditPage } from "./pages/Audit";
 import { BookingsPage } from "./pages/Bookings";
+import { CustomersPage } from "./pages/Customers";
 import { DashboardPage } from "./pages/Dashboard";
 import { EnquiriesPage } from "./pages/Enquiries";
 import { KiosksPage } from "./pages/Kiosks";
 import { Login } from "./pages/Login";
+import { UsersPage } from "./pages/Users";
 
 function Guard({ perm, children }: { perm: string; children: ReactNode }) {
   const { can } = useAuth();
@@ -38,6 +41,9 @@ export function App() {
         />
         <Route path="bookings" element={<Guard perm="booking.read"><BookingsPage /></Guard>} />
         <Route path="enquiries" element={<Guard perm="enquiry.manage"><EnquiriesPage /></Guard>} />
+        <Route path="customers" element={<Guard perm="customer.read"><CustomersPage /></Guard>} />
+        <Route path="users" element={<Guard perm="user.manage"><UsersPage /></Guard>} />
+        <Route path="audit" element={<Guard perm="audit.read"><AuditPage /></Guard>} />
         <Route path="kiosks" element={<Guard perm="kiosk.manage"><KiosksPage /></Guard>} />
         <Route path="ai" element={<Guard perm="dashboard.read"><AiUsagePage /></Guard>} />
         <Route path="*" element={<Navigate to="/" replace />} />

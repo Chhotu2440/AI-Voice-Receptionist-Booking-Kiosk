@@ -2,6 +2,18 @@
 
 **Updated:** 2026-11-11 · **Phase:** 5, Sprint 5 (admin dashboard) in progress; Sprint 4 done except the human voice test · **Overall:** 🟢
 
+## Sprint 5 PM report: admin milestone 2: customers, staff accounts, audit log
+- **Customers** (`/admin/customers`, new API): search by name, full phone or last digits; profile with bookings, enquiries, spend, current consents and consent history.
+  - **Correction** (name, email, language). Phone stays fixed because it is the customer's identity.
+  - **Export** (right of access): JSON download, audited.
+  - **Erase personal data** (right to erasure): blocked while a booking is upcoming; needs a reason and typing ANONYMIZE. Removes name, phone, email, booking notes, occasion details, enquiry details and WhatsApp message contents. Keeps bookings and amounts for accounts. If the person books again later, they become a new customer.
+  - The audit log records that a correction, export or erasure happened, never the personal values.
+- **Staff accounts:** add staff with a role (Owner, Manager, Front desk, Viewer, each with a plain description), rename, change role, reset password, deactivate. Deactivating or resetting a password signs the person out everywhere. You can't remove your own owner role or deactivate yourself.
+- **Audit log** (`/admin/audit`, new API): filter by record type, action and dates; before/after view; user names resolved.
+- Bookings link to their customer. The menu shows each page only to roles allowed to open it.
+- **Tests:** backend 179 passed (3 new: search/correct/export, erasure, role limits); admin E2E 2 passed (adds export + erase, and staff created through the UI with audit check).
+- **Known gaps:** webhook payloads from Interakt (kept 90 days) aren't scrubbed on erasure; they hold message IDs and status only. The automatic 24-month retention job isn't built yet.
+
 ## Sprint 5 PM report: admin dashboard (milestone 1)
 - **Done:** new `admin/` app (React + TS + Tailwind + TanStack Query), light/dark, works on desktop, tablet and phone.
   - **Sign-in:** access token in memory only; the session survives reloads through the existing httpOnly refresh cookie. Menus and pages follow the user's role (e.g. front desk can't open Kiosks).
@@ -12,7 +24,7 @@
   - **AI & voice cost:** sessions, cost (₹/$), per session and per voice booking, daily/monthly cap bars, owner-only budget form.
 - **Tests:** backend 176 passed (2 new dashboard tests); admin unit 3 passed; admin E2E 2 passed against a real backend (owner books + cancels + reload keeps session; staff role is restricted). New CI workflow `admin.yml`.
 - **Checked in the browser:** sign-in, dashboard, new booking, reschedule (weekday ₹1,200 → weekend ₹1,600), kiosk pairing and settings, AI page, light/dark, phone width.
-- **Not in this milestone:** packages/pricing/schedule screens (ADMIN-02), customers (export/anonymize), users & audit log, 2FA (CORE-05).
+- **Not in this milestone:** packages/pricing/schedule screens (ADMIN-02), 2FA (CORE-05).
 
 ## Sprint 4 progress
 - **Done:** on-device presence detection (CAM-01/02), unit + E2E tested.

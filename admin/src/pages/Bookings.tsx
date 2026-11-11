@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import { SlotPicker } from "../components/SlotPicker";
 import { Badge, Drawer, Empty, ErrorBox, Loading, Modal, PageHeader, Pager } from "../components/ui";
@@ -192,7 +192,18 @@ function BookingDrawer({ id, onClose }: { id: string | null; onClose: () => void
           </div>
 
           <dl className="grid grid-cols-2 gap-4 text-sm">
-            <Field label="Customer" value={data.customer.name} />
+            <Field
+              label="Customer"
+              value={
+                can("customer.read") ? (
+                  <Link className="text-brand-600 hover:underline" to={`/customers?id=${data.customer_id}`}>
+                    {data.customer.name}
+                  </Link>
+                ) : (
+                  data.customer.name
+                )
+              }
+            />
             <Field label="Phone" value={<a className="hover:underline" href={`tel:${data.customer_phone}`}>{data.customer_phone}</a>} />
             <Field label="When" value={`${dateLabel(data.date)}, ${data.start_time}–${data.end_time}`} />
             <Field label="Package" value={`${data.package_name} · ${data.guest_count} players`} />

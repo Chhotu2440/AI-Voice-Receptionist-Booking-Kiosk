@@ -9,12 +9,12 @@ Full task list with descriptions, dependencies, estimates and acceptance criteri
 | COMPLETED (Sprint 2) | DISC-05, PLAT-03, BOOK-01…07 (verified on MySQL 8.4 in CI) |
 | COMPLETED (Sprint 3) | KIOSK-01…05 |
 | COMPLETED (Sprint 4) | CAM-01…02, VOICE-01…06, INT-01 (live send waits on the Interakt key/template) |
-| COMPLETED (Sprint 5) | ADMIN-01 (shell, login, role-based menus), ADMIN-03 bookings + enquiries (customers/anonymize pending), ADMIN-04 kiosks + AI cost/budget, dashboard |
+| COMPLETED (Sprint 5) | ADMIN-01 (shell, login, role-based menus), ADMIN-03 bookings, enquiries, customers (export, correction, erasure), staff accounts, audit log viewer, ADMIN-04 kiosks + AI cost/budget, dashboard |
 | IN_PROGRESS | KIOSK-06 (service-worker shell, watchdog remaining) |
 | READY | DISC-06, ADMIN-02 (packages, pricing, schedule UI) |
 | BLOCKED | DISC-03 (owner: DaySchedule account details), DISC-04 (API key) |
-| BACKLOG | CORE-05 (TOTP), VOICE-07, INT-02…03, ADMIN-03 customers, ADMIN-05 (web booking), users & audit UI, REL-01…08 |
+| BACKLOG | CORE-05 (TOTP), VOICE-07, INT-02…03, ADMIN-05 (web booking), retention job (24-month auto-anonymize), REL-01…08 |
 
-**Next up:** ADMIN-02 (packages, pricing with price preview, schedule/holidays), then customers & users/audit screens, KIOSK-06 resilience, voice bake-off round 2 with human speakers.
+**Next up:** ADMIN-02 (packages, pricing with price preview, schedule/holidays), then KIOSK-06 resilience, voice bake-off round 2 with human speakers.
 
 **MVP estimate:** ≈ 80 engineer-days. Sprint 1 used ≈ 8 of the 9.5 days planned for PLAT/CORE.

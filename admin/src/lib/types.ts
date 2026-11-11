@@ -195,3 +195,64 @@ export type AiSettings = {
   price_version: string;
   prices: Record<string, Record<string, string>>;
 };
+
+export type CustomerSummary = {
+  id: string;
+  name: string;
+  phone: string;
+  phone_masked: string;
+  email: string | null;
+  preferred_language: string;
+  first_seen_at: string | null;
+  last_booking_at: string | null;
+  anonymized_at: string | null;
+  bookings: number;
+  total_spent: string;
+};
+
+export type CustomerDetail = CustomerSummary & {
+  bookings_list: {
+    id: string;
+    reference: string;
+    date: string;
+    start_time: string;
+    package_name: string;
+    guest_count: number;
+    status: string;
+    channel: string;
+    total: string;
+  }[];
+  enquiries: {
+    id: string;
+    reference: string;
+    status: string;
+    guest_count: number;
+    preferred_date: string | null;
+    created_at: string;
+  }[];
+  consents: Record<string, boolean>;
+  consent_log: { purpose: string; granted: boolean; notice_version: string; channel: string; created_at: string }[];
+};
+
+export type StaffUser = {
+  id: string;
+  email: string;
+  name: string;
+  is_active: boolean;
+  role_codes: string[];
+  last_login_at: string | null;
+};
+
+export type AuditEntry = {
+  id: number;
+  created_at: string;
+  actor_type: string;
+  actor_id: string | null;
+  actor_name: string | null;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  before: Record<string, unknown> | null;
+  after: Record<string, unknown> | null;
+  ip: string | null;
+};

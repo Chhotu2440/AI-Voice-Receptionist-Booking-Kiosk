@@ -7,7 +7,10 @@ export const NAV: { to: string; label: string; perm: string; icon: string }[] = 
   { to: "/", label: "Dashboard", perm: "dashboard.read", icon: "M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z" },
   { to: "/bookings", label: "Bookings", perm: "booking.read", icon: "M7 2v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2H7zm-2 8h14v10H5V10z" },
   { to: "/enquiries", label: "Event enquiries", perm: "enquiry.manage", icon: "M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z" },
+  { to: "/customers", label: "Customers", perm: "customer.read", icon: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm0 2c-4 0-8 2-8 5v1h16v-1c0-3-4-5-8-5z" },
   { to: "/kiosks", label: "Kiosks", perm: "kiosk.manage", icon: "M4 3h16a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1h-6v2h3v2H7v-2h3v-2H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm1 2v9h14V5H5z" },
+  { to: "/users", label: "Staff accounts", perm: "user.manage", icon: "M16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0 2c-2.7 0-8 1.3-8 4v2h10v-2c0-1 .4-1.9 1.1-2.7C10 13.4 8.8 13 8 13zm8 0c-.3 0-.7 0-1.1.1A4.5 4.5 0 0 1 17 17v2h7v-2c0-2.7-5.3-4-8-4z" },
+  { to: "/audit", label: "Audit log", perm: "audit.read", icon: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8 13h8v2H8v-2zm0 4h8v2H8v-2z" },
   { to: "/ai", label: "AI & voice cost", perm: "dashboard.read", icon: "M12 2a4 4 0 0 1 4 4v5a4 4 0 0 1-8 0V6a4 4 0 0 1 4-4zm-7 9h2a5 5 0 0 0 10 0h2a7 7 0 0 1-6 6.92V21h-2v-3.08A7 7 0 0 1 5 11z" },
 ];
 

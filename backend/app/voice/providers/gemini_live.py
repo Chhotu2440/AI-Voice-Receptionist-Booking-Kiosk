@@ -149,7 +149,7 @@ class GeminiLiveProvider:
     output_rate = OUT_RATE
 
     def __init__(self, settings: Settings) -> None:
-        if settings.gemini_api_key is None:
+        if settings.gemini_api_key is None or not settings.gemini_api_key.get_secret_value():
             raise RuntimeError("GEMINI_API_KEY is not configured")
         self.settings = settings
         self.ws: ClientConnection | None = None

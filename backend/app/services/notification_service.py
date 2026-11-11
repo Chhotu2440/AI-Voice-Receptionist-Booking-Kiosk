@@ -74,7 +74,8 @@ def queue_booking_confirmation(
 
 
 def _client(settings: Settings) -> InteraktClient | None:
-    return InteraktClient(settings.interakt_api_key.get_secret_value()) if settings.interakt_api_key else None
+    key = settings.interakt_api_key.get_secret_value() if settings.interakt_api_key else ""
+    return InteraktClient(key) if key else None
 
 
 async def send_due(

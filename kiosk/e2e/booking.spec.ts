@@ -63,7 +63,7 @@ test("E2E-001: touch-only booking from idle to confirmation, then reset", async 
   await expect(page.getByTestId("countdown")).toBeVisible();
   const total = await page.getByTestId("total").innerText();
   expect(["₹2,700", "₹3,300"]).toContain(total); // 6 × ₹450 weekday or 6 × ₹550 weekend
-  await page.getByTestId("whatsapp-consent").tap();
+  await expect(page.getByTestId("whatsapp-consent")).toBeChecked(); // pre-ticked (owner decision)
   await page.getByTestId("confirm-booking").tap();
 
   await expect(page.getByTestId("confirmed-title")).toBeVisible();

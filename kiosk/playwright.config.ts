@@ -16,6 +16,11 @@ const backendEnv = {
   PUBLIC_RATE_LIMIT_PER_MINUTE: "10000",
   BOOKING_RATE_LIMIT_PER_MINUTE: "10000",
   LOGIN_RATE_LIMIT_PER_MINUTE: "100",
+  // Isolate from a developer's backend/.env: no origin restriction, no real voice or WhatsApp calls.
+  CORS_ORIGINS: "[]",
+  OPENAI_API_KEY: "",
+  GEMINI_API_KEY: "",
+  INTERAKT_API_KEY: "",
 };
 
 export default defineConfig({

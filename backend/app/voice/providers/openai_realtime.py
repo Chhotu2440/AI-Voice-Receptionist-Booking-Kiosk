@@ -153,7 +153,7 @@ class OpenAIRealtimeProvider:
     output_rate = RATE
 
     def __init__(self, settings: Settings) -> None:
-        if settings.openai_api_key is None:
+        if settings.openai_api_key is None or not settings.openai_api_key.get_secret_value():
             raise RuntimeError("OPENAI_API_KEY is not configured")
         self.settings = settings
         self.ws: ClientConnection | None = None

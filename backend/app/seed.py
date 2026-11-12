@@ -15,7 +15,14 @@ from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.catalogue import Occasion, Package, PackageFeature, PackagePricingRule
+from app.models.catalogue import (
+    GameFormat,
+    Occasion,
+    Package,
+    PackageFeature,
+    PackageGame,
+    PackagePricingRule,
+)
 from app.models.identity import Permission, Role
 from app.models.schedule import BusinessHours, BusinessLocation, Resource
 from app.services.rbac import PERMISSIONS, ROLE_GRANTS, ROLE_NAMES
@@ -65,11 +72,63 @@ OCCASIONS = [
     ("OTHER", "Other", "अन्य", False, []),
 ]
 
-# (code, name, duration, games, formats, weekday price, weekend price, features, recommended)
+# Package content confirmed by the owner on 2026-11-12 (prices from the website, doc 02).
+# (code, name_en, name_hi, minutes, rounds, weekday price, weekend price, [(feature_en, feature_hi)],
+#  [game mode codes], recommended)
 PACKAGES = [
-    ("BEGINNER", "Beginner", 30, 2, None, "300", "400", ["2 games"], False),
-    ("INTERMEDIATE", "Intermediate", 45, None, 4, "450", "550", ["4 game formats"], True),
-    ("EXPERT", "Expert", 60, None, 5, "600", "650", ["5 game formats"], False),
+    (
+        "BEGINNER",
+        "Beginner",
+        "बिगिनर",
+        20,
+        2,
+        "300",
+        "400",
+        [
+            ("2 solo matches", "2 सोलो मैच"),
+            ("Unlimited lives & bullets", "अनलिमिटेड लाइफ़ और गोलियाँ"),
+            ("No additional challenges", "कोई अतिरिक्त चैलेंज नहीं"),
+        ],
+        [],
+        False,
+    ),
+    (
+        "INTERMEDIATE",
+        "Intermediate",
+        "इंटरमीडिएट",
+        45,
+        None,
+        "450",
+        "550",
+        [("Team-based matches", "टीम वाले मैच")],
+        ["RESPAWN_CHALLENGE", "LIMITED_LIVES", "LAST_MAN_STANDING"],
+        True,
+    ),
+    (
+        "EXPERT",
+        "Advanced",
+        "एडवांस्ड",
+        60,
+        None,
+        "600",
+        "650",
+        [("Team-based matches", "टीम वाले मैच")],
+        ["LIMITED_LIVES", "LAST_MAN_STANDING", "DEATHMATCH"],
+        False,
+    ),
+]
+
+# Game modes named on playlasertag.in (doc 02). Descriptions and which package includes which mode are
+# business content: left empty for the owner to fill in from the admin dashboard (never invented here).
+GAME_FORMATS = [
+    ("TEAM_MATCH", "Team Match", "टीम मैच"),
+    ("SHOOTING", "Shooting", "शूटिंग"),
+    ("FRIENDLY_FIRE", "Friendly Fire", "फ्रेंडली फायर"),
+    # Challenges and modes per package, from the owner (2026-11-12).
+    ("RESPAWN_CHALLENGE", "Respawn time challenge", "रीस्पॉन टाइम चैलेंज"),
+    ("LIMITED_LIVES", "Limited lives & bullets", "सीमित लाइफ़ और गोलियाँ"),
+    ("LAST_MAN_STANDING", "Last Man Standing", "लास्ट मैन स्टैंडिंग"),
+    ("DEATHMATCH", "Deathmatch", "डेथमैच"),
 ]
 
 MAX_PLAYERS = 20  # D-02, confirmed 2026-11-10
@@ -148,18 +207,32 @@ async def seed_initial_catalogue(session: AsyncSession) -> bool:
         )
     )
 
-    for i, (code, name, duration, games, formats, price_wd, price_we, features, rec) in enumerate(PACKAGES):
+    games_by_code: dict[str, GameFormat] = {}
+    for i, (gcode, gname, gname_hi) in enumerate(GAME_FORMATS):
+        games_by_code[gcode] = GameFormat(code=gcode, name_en=gname, name_hi=gname_hi, sort_order=i)
+        session.add(games_by_code[gcode])
+    await session.flush()
+    for i, (code, name, name_hi, duration, rounds, price_wd, price_we, features, modes, rec) in enumerate(
+        PACKAGES
+    ):
         package = Package(
             code=code,
             name_en=name,
+            name_hi=name_hi,
             duration_min=duration,
-            games_count=games,
-            formats_count=formats,
+            games_count=rounds,
+            formats_count=len(modes) or None,
             min_guests=1,
             max_guests=MAX_PLAYERS,
             is_recommended=rec,
             sort_order=i,
-            features=[PackageFeature(text_en=t, sort_order=j) for j, t in enumerate(features)],
+            features=[
+                PackageFeature(text_en=en, text_hi=hi, sort_order=j) for j, (en, hi) in enumerate(features)
+            ],
+            game_links=[
+                PackageGame(game_format_id=games_by_code[m].id, game=games_by_code[m], sort_order=j)
+                for j, m in enumerate(modes)
+            ],
         )
         session.add(package)
         await session.flush()

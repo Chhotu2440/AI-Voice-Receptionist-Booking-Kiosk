@@ -27,13 +27,26 @@ export function PackagesScreen() {
             <div className="text-2xl text-ink-muted">
               {p.duration_min} {t.minutes}
               {p.games_count ? ` · ${p.games_count} ${t.games}` : ""}
-              {p.formats_count ? ` · ${p.formats_count} ${t.formats}` : ""}
             </div>
-            <ul className="flex-1 space-y-1 text-xl">
-              {p.features.map((f) => (
-                <li key={f.en}>• {f[lang]}</li>
-              ))}
-            </ul>
+            <div className="flex-1 space-y-3">
+              <ul className="space-y-1 text-xl">
+                {p.features.map((f) => (
+                  <li key={f.en}>• {f[lang]}</li>
+                ))}
+              </ul>
+              {p.games.length > 0 ? (
+                <div data-testid={`modes-${p.code}`}>
+                  <div className="mb-2 text-lg text-ink-muted">{t.modes}</div>
+                  <div className="flex flex-wrap gap-2">
+                    {p.games.map((g) => (
+                      <span key={g.en} className="rounded-full border border-laser/50 px-3 py-1 text-lg text-laser">
+                        {g[lang]}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
             <div>
               <div className="text-lg text-ink-muted">{t.todayPrice}</div>
               <div className="font-display text-4xl text-laser">

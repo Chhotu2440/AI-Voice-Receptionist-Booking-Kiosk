@@ -55,6 +55,45 @@ class Package(UUIDPrimaryKey, Timestamps, SoftDelete, Base):
         order_by="PackageFeature.sort_order",
         lazy="selectin",
     )
+    game_links: Mapped[list[PackageGame]] = relationship(
+        cascade="all, delete-orphan",
+        order_by="PackageGame.sort_order",
+        lazy="selectin",
+    )
+
+    @property
+    def games(self) -> list[GameFormat]:
+        """Game formats included in this package (active ones, in the owner's order)."""
+        return [link.game for link in self.game_links if link.game.is_active]
+
+
+class GameFormat(UUIDPrimaryKey, Timestamps, Base):
+    """A game mode played in the arena (e.g. Team Match). Managed in admin; linked to packages."""
+
+    __tablename__ = "game_formats"
+
+    code: Mapped[str] = mapped_column(String(32), unique=True)
+    name_en: Mapped[str] = mapped_column(String(64))
+    name_hi: Mapped[str] = mapped_column(String(64), default="")
+    description_en: Mapped[str] = mapped_column(String(400), default="")
+    description_hi: Mapped[str] = mapped_column(String(400), default="")
+    round_minutes: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
+    sort_order: Mapped[int] = mapped_column(SmallInteger, default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class PackageGame(Base):
+    __tablename__ = "package_games"
+
+    package_id: Mapped[uuid.UUID] = mapped_column(
+        UUIDBinary(), ForeignKey("packages.id", ondelete="CASCADE"), primary_key=True
+    )
+    game_format_id: Mapped[uuid.UUID] = mapped_column(
+        UUIDBinary(), ForeignKey("game_formats.id", ondelete="CASCADE"), primary_key=True
+    )
+    sort_order: Mapped[int] = mapped_column(SmallInteger, default=0)
+
+    game: Mapped[GameFormat] = relationship(lazy="selectin")
 
 
 class PackageFeature(Base):

@@ -87,7 +87,7 @@ async def test_booking_queues_confirmation_only_with_consent(
     assert len(rows) == 1 and rows[0].status == "QUEUED" and rows[0].to_masked == "98•••••210"
     v = rows[0].variables
     assert (
-        v[0] == "Riya Sharma" and v[1] == b["reference"] and v[3].startswith("6:00 PM") and v[4] == "Expert"
+        v[0] == "Riya Sharma" and v[1] == b["reference"] and v[3].startswith("6:00 PM") and v[4] == "Advanced"
     )
     assert v[5] == "4" and v[6] == "Rs 2,400" and v[7] == "Pay at reception"
 

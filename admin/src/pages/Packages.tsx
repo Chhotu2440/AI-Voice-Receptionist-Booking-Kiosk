@@ -3,9 +3,9 @@ import { useState, type FormEvent } from "react";
 
 import { Badge, Drawer, Empty, ErrorBox, Loading, Modal, PageHeader } from "../components/ui";
 import { api } from "../lib/api";
-import type { OccasionFull, PackageFull, Page } from "../lib/types";
+import type { GameFormat, OccasionFull, PackageFull, Page } from "../lib/types";
 
-type Draft = Omit<PackageFull, "id">;
+type Draft = Omit<PackageFull, "id" | "games"> & { game_codes: string[] };
 
 const EMPTY: Draft = {
   code: "",
@@ -22,7 +22,12 @@ const EMPTY: Draft = {
   sort_order: 0,
   is_active: true,
   features: [],
+  game_codes: [],
 };
+
+function useGames() {
+  return useQuery({ queryKey: ["game-formats"], queryFn: () => api<GameFormat[]>("/admin/game-formats") });
+}
 
 export function PackagesPage() {
   const list = useQuery({
@@ -68,7 +73,11 @@ export function PackagesPage() {
                       </div>
                       <div className="text-xs text-slate-500">{p.code}{p.name_hi && ` · ${p.name_hi}`}</div>
                     </td>
-                    <td className="td text-sm">{p.duration_min} min{p.games_count ? ` · ${p.games_count} games` : ""}</td>
+                    <td className="td text-sm">
+                      {p.duration_min} min{p.games_count ? ` · ${p.games_count} rounds` : ""}
+                      {p.games.length > 0 && <div className="text-xs text-slate-500">{p.games.map((g) => g.name_en).join(", ")}</div>}
+                      {p.games.length === 0 && <div className="text-xs text-amber-600">No games picked</div>}
+                    </td>
                     <td className="td text-sm tabular-nums">{p.min_guests}–{p.max_guests}</td>
                     <td className="td">{p.is_active ? <Badge status="ACTIVE" label="Shown" /> : <Badge status="DISABLED" label="Hidden" />}</td>
                     <td className="td text-right">
@@ -84,6 +93,7 @@ export function PackagesPage() {
           </div>
         )}
       </div>
+      <GamesSection />
       <OccasionsSection />
       {editing && <PackageEditor pkg={editing === "new" ? null : editing} onClose={() => setEditing(null)} />}
       {removing && <DeleteModal pkg={removing} onClose={() => setRemoving(null)} />}
@@ -93,11 +103,16 @@ export function PackagesPage() {
 
 function PackageEditor({ pkg, onClose }: { pkg: PackageFull | null; onClose: () => void }) {
   const qc = useQueryClient();
-  const [d, setD] = useState<Draft>(() => (pkg ? { ...pkg, features: pkg.features.map((f) => ({ ...f })) } : EMPTY));
+  const games = useGames();
+  const [d, setD] = useState<Draft>(() => {
+    if (!pkg) return EMPTY;
+    const { games: linked, id: _id, ...rest } = pkg;
+    return { ...rest, features: pkg.features.map((f) => ({ ...f })), game_codes: linked.map((g) => g.code) };
+  });
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setD((prev) => ({ ...prev, [k]: v }));
   const m = useMutation({
     mutationFn: () => {
-      const { code, ...fields } = d;
+      const { code, formats_count: _formats, ...fields } = d; // formats_count follows the picked games
       const body = { ...fields, features: d.features.filter((f) => f.text_en.trim()) };
       return pkg
         ? api<PackageFull>(`/admin/packages/${pkg.id}`, { method: "PATCH", body })
@@ -155,13 +170,9 @@ function PackageEditor({ pkg, onClose }: { pkg: PackageFull | null; onClose: () 
             <label className="label" htmlFor="p-duration">Minutes</label>
             <input id="p-duration" type="number" min={5} max={480} required className="input" value={d.duration_min} onChange={(e) => set("duration_min", Number(e.target.value))} />
           </div>
-          <div>
-            <label className="label" htmlFor="p-games">Games</label>
-            <input id="p-games" type="number" min={1} max={100} className="input" value={d.games_count ?? ""} onChange={(e) => set("games_count", num(e.target.value))} />
-          </div>
-          <div>
-            <label className="label" htmlFor="p-formats">Formats</label>
-            <input id="p-formats" type="number" min={1} max={100} className="input" value={d.formats_count ?? ""} onChange={(e) => set("formats_count", num(e.target.value))} />
+          <div className="col-span-2">
+            <label className="label" htmlFor="p-games">Rounds of play</label>
+            <input id="p-games" type="number" min={1} max={100} className="input" placeholder="e.g. 2" value={d.games_count ?? ""} onChange={(e) => set("games_count", num(e.target.value))} />
           </div>
           <div>
             <label className="label" htmlFor="p-min">Min players</label>
@@ -182,6 +193,36 @@ function PackageEditor({ pkg, onClose }: { pkg: PackageFull | null; onClose: () 
             Mark as recommended
           </label>
         </div>
+
+        <fieldset>
+          <legend className="label">Games played in this package</legend>
+          <p className="mb-2 text-xs text-slate-500">
+            Tick in the order they're played. The kiosk shows them, and the assistant explains them using the descriptions
+            under "Game modes" below.
+          </p>
+          {games.isPending ? (
+            <Loading />
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {(games.data ?? []).filter((g) => g.is_active).map((g) => {
+                const pos = d.game_codes.indexOf(g.code);
+                return (
+                  <button
+                    type="button"
+                    key={g.code}
+                    aria-pressed={pos >= 0}
+                    data-testid={`pick-game-${g.code}`}
+                    onClick={() => set("game_codes", pos >= 0 ? d.game_codes.filter((c) => c !== g.code) : [...d.game_codes, g.code])}
+                    className={`rounded-lg border px-3 py-1.5 text-sm ${pos >= 0 ? "border-brand-600 bg-brand-600 text-white" : "border-slate-300 dark:border-slate-700"}`}
+                  >
+                    {pos >= 0 && <span className="mr-1 tabular-nums">{pos + 1}.</span>}
+                    {g.name_en}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </fieldset>
 
         <fieldset>
           <legend className="label">What's included (shown as bullet points)</legend>
@@ -220,6 +261,130 @@ function PackageEditor({ pkg, onClose }: { pkg: PackageFull | null; onClose: () 
           <button className="btn-primary" disabled={m.isPending} data-testid="save-package">{pkg ? "Save package" : "Create package"}</button>
         </div>
         {!pkg && <p className="text-xs text-slate-500">After creating it, set its weekday and weekend prices on the Pricing page; the kiosk can't sell a package without a price.</p>}
+      </form>
+    </Drawer>
+  );
+}
+
+/** Game modes (Team Match, ...): what each one is, in English and Hindi. Packages pick from these. */
+function GamesSection() {
+  const games = useGames();
+  const [editing, setEditing] = useState<GameFormat | "new" | null>(null);
+  return (
+    <section className="card mt-6 overflow-hidden">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 dark:border-slate-800">
+        <div>
+          <h2 className="font-semibold">Game modes</h2>
+          <p className="text-sm text-slate-500">
+            How each game is played, in a sentence or two. The voice assistant uses exactly this text; with no description it
+            only says the name.
+          </p>
+        </div>
+        <button className="btn-primary" onClick={() => setEditing("new")} data-testid="add-game">+ New game mode</button>
+      </div>
+      {games.isPending ? (
+        <Loading />
+      ) : games.isError ? (
+        <div className="p-4"><ErrorBox error={games.error} /></div>
+      ) : games.data.length === 0 ? (
+        <Empty>No game modes yet.</Empty>
+      ) : (
+        <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+          {games.data.map((g) => (
+            <li key={g.id} className={`flex flex-wrap items-start justify-between gap-3 px-4 py-3 text-sm ${g.is_active ? "" : "opacity-60"}`} data-testid={`game-row-${g.code}`}>
+              <div className="min-w-0 flex-1">
+                <div className="font-medium">
+                  {g.name_en}
+                  {g.name_hi && <span className="ml-2 font-normal text-slate-500">{g.name_hi}</span>}
+                  {g.round_minutes && <span className="ml-2 font-normal text-slate-500">· {g.round_minutes} min per round</span>}
+                  {!g.is_active && <span className="ml-2 text-xs text-slate-500">(switched off)</span>}
+                </div>
+                {g.description_en ? (
+                  <p className="mt-0.5 text-slate-600 dark:text-slate-300">{g.description_en}</p>
+                ) : (
+                  <p className="mt-0.5 text-amber-600">No description yet: the assistant can't explain this game.</p>
+                )}
+              </div>
+              <button className="btn-secondary" onClick={() => setEditing(g)}>Edit</button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {editing && <GameEditor game={editing === "new" ? null : editing} onClose={() => setEditing(null)} />}
+    </section>
+  );
+}
+
+function GameEditor({ game, onClose }: { game: GameFormat | null; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [g, setG] = useState({
+    code: game?.code ?? "",
+    name_en: game?.name_en ?? "",
+    name_hi: game?.name_hi ?? "",
+    description_en: game?.description_en ?? "",
+    description_hi: game?.description_hi ?? "",
+    round_minutes: game?.round_minutes ?? null,
+    sort_order: game?.sort_order ?? 0,
+    is_active: game?.is_active ?? true,
+  });
+  const m = useMutation({
+    mutationFn: () => {
+      const { code, ...rest } = g;
+      return game
+        ? api<GameFormat>(`/admin/game-formats/${game.id}`, { method: "PATCH", body: rest })
+        : api<GameFormat>("/admin/game-formats", { method: "POST", body: { ...rest, code: code.trim().toUpperCase() } });
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["game-formats"] });
+      void qc.invalidateQueries({ queryKey: ["admin-packages"] });
+      onClose();
+    },
+  });
+  function submit(e: FormEvent) {
+    e.preventDefault();
+    m.mutate();
+  }
+  return (
+    <Drawer open onClose={onClose} title={game ? `Edit ${game.name_en}` : "New game mode"}>
+      <form className="space-y-4 text-sm" onSubmit={submit}>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <label className="label" htmlFor="g-name-en">Name (English)</label>
+            <input id="g-name-en" className="input" required maxLength={64} value={g.name_en} onChange={(e) => setG({ ...g, name_en: e.target.value })} />
+          </div>
+          <div>
+            <label className="label" htmlFor="g-name-hi">Name (Hindi)</label>
+            <input id="g-name-hi" className="input" maxLength={64} value={g.name_hi} onChange={(e) => setG({ ...g, name_hi: e.target.value })} />
+          </div>
+          {!game && (
+            <div>
+              <label className="label" htmlFor="g-code">Code</label>
+              <input id="g-code" className="input font-mono uppercase" required pattern="[A-Za-z0-9_]{2,32}" placeholder="e.g. CAPTURE_FLAG" value={g.code} onChange={(e) => setG({ ...g, code: e.target.value })} />
+            </div>
+          )}
+          <div>
+            <label className="label" htmlFor="g-minutes">Minutes per round (optional)</label>
+            <input id="g-minutes" type="number" min={1} max={120} className="input" value={g.round_minutes ?? ""} onChange={(e) => setG({ ...g, round_minutes: e.target.value === "" ? null : Number(e.target.value) })} />
+          </div>
+        </div>
+        <div>
+          <label className="label" htmlFor="g-desc-en">How it's played (English)</label>
+          <textarea id="g-desc-en" className="input min-h-[90px]" maxLength={400} placeholder="e.g. Two teams; tag the other team's vests to score. Most points when time runs out wins." value={g.description_en} onChange={(e) => setG({ ...g, description_en: e.target.value })} />
+          <p className="mt-1 text-xs text-slate-500">One or two short sentences. The assistant reads this to customers.</p>
+        </div>
+        <div>
+          <label className="label" htmlFor="g-desc-hi">How it's played (Hindi)</label>
+          <textarea id="g-desc-hi" className="input min-h-[90px]" maxLength={400} value={g.description_hi} onChange={(e) => setG({ ...g, description_hi: e.target.value })} />
+        </div>
+        <label className="flex items-center gap-2">
+          <input type="checkbox" className="h-4 w-4 accent-brand-600" checked={g.is_active} onChange={(e) => setG({ ...g, is_active: e.target.checked })} />
+          In use (switched-off games disappear from packages, the kiosk and the assistant)
+        </label>
+        <ErrorBox error={m.error} />
+        <div className="flex justify-end gap-2 border-t border-slate-200 pt-4 dark:border-slate-800">
+          <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
+          <button className="btn-primary" disabled={m.isPending} data-testid="save-game">Save</button>
+        </div>
       </form>
     </Drawer>
   );

@@ -273,6 +273,19 @@ export type PackageFull = {
   sort_order: number;
   is_active: boolean;
   features: { text_en: string; text_hi: string }[];
+  games: GameFormat[];
+};
+
+export type GameFormat = {
+  id: string;
+  code: string;
+  name_en: string;
+  name_hi: string;
+  description_en: string;
+  description_hi: string;
+  round_minutes: number | null;
+  sort_order: number;
+  is_active: boolean;
 };
 
 export type OccasionFull = {

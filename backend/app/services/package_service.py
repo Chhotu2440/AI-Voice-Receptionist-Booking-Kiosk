@@ -7,6 +7,7 @@ from collections.abc import Sequence
 from datetime import date
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import (
@@ -17,10 +18,12 @@ from app.core.exceptions import (
     ValidationFailed,
 )
 from app.core.timeutil import utcnow
-from app.models.catalogue import Occasion, Package, PackageFeature
+from app.models.catalogue import GameFormat, Occasion, Package, PackageFeature, PackageGame
 from app.repositories import catalogue as catalogue_repo
 from app.schemas.catalogue import (
     FeatureIn,
+    GameFormatIn,
+    GameFormatUpdate,
     OccasionUpdate,
     PackageCreate,
     PackagePricePreview,
@@ -50,11 +53,33 @@ PACKAGE_FIELDS = (
 def _snapshot(p: Package) -> dict[str, Any]:
     data = {f: getattr(p, f) for f in PACKAGE_FIELDS}
     data["features"] = [f.text_en for f in p.features]
+    data["games"] = [g.code for g in p.games]
     return data
 
 
 def _features(items: Sequence[FeatureIn]) -> list[PackageFeature]:
     return [PackageFeature(text_en=f.text_en, text_hi=f.text_hi, sort_order=i) for i, f in enumerate(items)]
+
+
+async def _game_links(session: AsyncSession, codes: Sequence[str]) -> list[PackageGame]:
+    """Resolve game codes (in the owner's order) to links; unknown or switched-off codes are rejected."""
+    wanted = [c.strip().upper() for c in codes]
+    if len(set(wanted)) != len(wanted):
+        raise ValidationFailed("A game is listed twice.")
+    if not wanted:
+        return []
+    rows = (
+        (await session.execute(select(GameFormat).where(GameFormat.code.in_(wanted), GameFormat.is_active)))
+        .scalars()
+        .all()
+    )
+    by_code = {g.code: g for g in rows}
+    missing = [c for c in wanted if c not in by_code]
+    if missing:
+        raise ValidationFailed(f"Unknown or switched-off games: {', '.join(missing)}")
+    return [
+        PackageGame(game_format_id=by_code[c].id, game=by_code[c], sort_order=i) for i, c in enumerate(wanted)
+    ]
 
 
 async def list_public(
@@ -107,8 +132,11 @@ async def get_any(session: AsyncSession, package_id: uuid.UUID) -> Package:
 async def create(session: AsyncSession, data: PackageCreate, actor: Actor) -> Package:
     if await catalogue_repo.get_package_by_code(session, data.code) is not None:
         raise ConflictError("A package with this code already exists.")
-    fields = data.model_dump(exclude={"features"})
-    package = Package(**fields, features=_features(data.features))
+    fields = data.model_dump(exclude={"features", "game_codes"})
+    links = await _game_links(session, data.game_codes)
+    if links:
+        fields["formats_count"] = len(links)
+    package = Package(**fields, features=_features(data.features), game_links=links)
     session.add(package)
     await session.flush()
     audit_service.record(session, actor, "package.create", "package", package.id, None, _snapshot(package))
@@ -119,7 +147,7 @@ async def create(session: AsyncSession, data: PackageCreate, actor: Actor) -> Pa
 async def update(session: AsyncSession, package_id: uuid.UUID, data: PackageUpdate, actor: Actor) -> Package:
     package = await get_any(session, package_id)
     before = _snapshot(package)
-    patch = data.model_dump(exclude_unset=True, exclude={"features"})
+    patch = data.model_dump(exclude_unset=True, exclude={"features", "game_codes"})
     min_g = patch.get("min_guests", package.min_guests)
     max_g = patch.get("max_guests", package.max_guests)
     if max_g < min_g:
@@ -128,6 +156,9 @@ async def update(session: AsyncSession, package_id: uuid.UUID, data: PackageUpda
         setattr(package, key, value)
     if data.features is not None:
         package.features = _features(data.features)
+    if data.game_codes is not None:
+        package.game_links = await _game_links(session, data.game_codes)
+        package.formats_count = len(package.game_links) or None
     audit_service.record(session, actor, "package.update", "package", package.id, before, _snapshot(package))
     await session.commit()
     await session.refresh(package)
@@ -153,3 +184,41 @@ async def update_occasion(session: AsyncSession, code: str, data: OccasionUpdate
     audit_service.record(session, actor, "occasion.update", "occasion", code, before, patch)
     await session.commit()
     return occasion
+
+
+# --- game formats ---------------------------------------------------------------------------------
+
+
+async def list_games(session: AsyncSession) -> list[GameFormat]:
+    rows = await session.execute(select(GameFormat).order_by(GameFormat.sort_order, GameFormat.name_en))
+    return list(rows.scalars())
+
+
+async def create_game(session: AsyncSession, data: GameFormatIn, actor: Actor) -> GameFormat:
+    exists = (
+        await session.execute(select(GameFormat).where(GameFormat.code == data.code))
+    ).scalar_one_or_none()
+    if exists is not None:
+        raise ConflictError("A game with this code already exists.")
+    game = GameFormat(**data.model_dump())
+    session.add(game)
+    await session.flush()
+    audit_service.record(session, actor, "game.create", "game_format", game.id, None, data.model_dump())
+    await session.commit()
+    return game
+
+
+async def update_game(
+    session: AsyncSession, game_id: uuid.UUID, data: GameFormatUpdate, actor: Actor
+) -> GameFormat:
+    game = await session.get(GameFormat, game_id)
+    if game is None:
+        raise NotFoundError("Game not found.")
+    patch = data.model_dump(exclude_unset=True)
+    before = {k: getattr(game, k) for k in patch}
+    for key, value in patch.items():
+        setattr(game, key, value)
+    audit_service.record(session, actor, "game.update", "game_format", game.id, before, patch)
+    await session.commit()
+    await session.refresh(game)
+    return game

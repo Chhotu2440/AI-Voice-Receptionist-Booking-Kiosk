@@ -3,7 +3,7 @@ import type { KioskConfig } from "../types";
 // Device credentials are long-lived and live in localStorage (the kiosk browser profile is dedicated and
 // locked down). Customer data is NEVER written to storage; it only exists in the live session state.
 const CREDS_KEY = "plt.kiosk.device";
-export const APP_VERSION = "0.1.0";
+export const APP_VERSION: string = __APP_VERSION__;
 
 export interface DeviceCreds {
   device_id: string;

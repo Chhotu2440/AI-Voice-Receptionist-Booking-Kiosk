@@ -55,12 +55,14 @@ export function useVoice(getToken: () => Promise<string>): void {
         },
       });
       v.muted = useKiosk.getState().voice.muted;
+      v.setVolume(useKiosk.getState().config.volume);
       session.current = v;
       v.start();
     });
     // The mic toggle lives in the store; apply changes to the running conversation.
     const unsubscribe = useKiosk.subscribe((st, prev) => {
       if (st.voice.muted !== prev.voice.muted) session.current?.setMuted(st.voice.muted);
+      if (st.config.volume !== prev.config.volume) session.current?.setVolume(st.config.volume);
     });
     return () => {
       cancelled = true;

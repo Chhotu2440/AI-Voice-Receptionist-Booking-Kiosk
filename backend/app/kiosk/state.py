@@ -54,6 +54,7 @@ class PackageCard(BaseModel):
     games_count: int | None
     formats_count: int | None
     features: list[dict[str, str]]
+    games: list[dict[str, str]] = []  # {"en", "hi", "about_en", "about_hi"}: game modes included
     recommended: bool
     eligible: bool
     min_guests: int

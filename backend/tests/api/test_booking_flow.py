@@ -104,8 +104,9 @@ async def test_avl_full_day_of_starts(client: AsyncClient) -> None:
 async def test_avl_hold_blocks_overlapping_starts_including_buffer(client: AsyncClient) -> None:
     assert (await hold(client, "EXPERT", start="18:00")).status_code == 201
     beginner = await starts(client, "BEGINNER")
-    assert "17:00" in beginner and "19:30" in beginner
-    for blocked in ("17:30", "18:00", "18:30", "19:00"):
+    # Beginner is 20 min + 10 min buffer = one 30-min cell, so 17:30 still fits before an 18:00 game.
+    assert "17:30" in beginner and "19:30" in beginner
+    for blocked in ("18:00", "18:30", "19:00"):
         assert blocked not in beginner
 
 
@@ -237,12 +238,12 @@ async def test_expired_hold_released_lazily_when_slot_requested(
 ) -> None:
     h = (await hold(client, "EXPERT", start="18:00")).json()
     await expire(maker, h["hold_id"])
-    # A different package overlapping the expired hold's cells (incl. 19:00, outside the new request).
+    # A different package overlapping the expired hold's cells (18:30 and 19:00 are outside the new request).
     r = await hold(client, "BEGINNER", start="18:00")
     assert r.status_code == 201, r.text
     c = await cells(maker)
     assert (
-        c[f"{MONDAY} 18:00"] == (1, 0) and c[f"{MONDAY} 18:30"] == (1, 0) and c[f"{MONDAY} 19:00"] == (0, 0)
+        c[f"{MONDAY} 18:00"] == (1, 0) and c[f"{MONDAY} 18:30"] == (0, 0) and c[f"{MONDAY} 19:00"] == (0, 0)
     )
 
 

@@ -30,6 +30,8 @@ export class VoiceSession {
   private playbackCtx: AudioContext | null = null;
   private player: AudioWorkletNode | null = null;
   private audioEl: HTMLAudioElement | null = null;
+  private gain: GainNode | null = null;
+  private volume = 0.7; // 0..1, from the kiosk's admin config
   private gate = new MicGate();
   private playing = false;
   private userSpeaking = false;
@@ -40,6 +42,12 @@ export class VoiceSession {
     private token: string,
     private cb: VoiceCallbacks,
   ) {}
+
+  /** Assistant voice volume, 0-100 (admin: Kiosks -> Settings -> Volume). Applies immediately. */
+  setVolume(percent: number): void {
+    this.volume = Math.min(1, Math.max(0, (Number.isFinite(percent) ? percent : 70) / 100));
+    if (this.gain) this.gain.gain.value = this.volume;
+  }
 
   start(): void {
     this.cb.onStatus("connecting");
@@ -84,12 +92,15 @@ export class VoiceSession {
       await this.playbackCtx.audioWorklet.addModule(playbackUrl);
       this.player = new AudioWorkletNode(this.playbackCtx, "playback-processor");
       const dest = this.playbackCtx.createMediaStreamDestination();
-      this.player.connect(dest);
+      this.gain = this.playbackCtx.createGain();
+      this.gain.gain.value = this.volume;
+      this.player.connect(this.gain);
+      this.gain.connect(dest);
       this.audioEl = new Audio();
       this.audioEl.srcObject = dest.stream;
       await this.audioEl.play().catch(() => {
         // Autoplay blocked (shouldn't happen after a tap / in kiosk mode): fall back to direct output.
-        this.player?.connect(this.playbackCtx!.destination);
+        this.gain?.connect(this.playbackCtx!.destination);
       });
       this.player.port.onmessage = (e) => {
         if (typeof e.data?.playing === "boolean") {

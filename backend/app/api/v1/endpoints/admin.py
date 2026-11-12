@@ -16,7 +16,16 @@ from app.models.identity import User
 from app.repositories import catalogue as catalogue_repo
 from app.repositories import users as users_repo
 from app.schemas.auth import UserCreate, UserOut, UserUpdate
-from app.schemas.catalogue import OccasionOut, OccasionUpdate, PackageCreate, PackageOut, PackageUpdate
+from app.schemas.catalogue import (
+    GameFormatIn,
+    GameFormatOut,
+    GameFormatUpdate,
+    OccasionOut,
+    OccasionUpdate,
+    PackageCreate,
+    PackageOut,
+    PackageUpdate,
+)
 from app.schemas.common import Page, PageParams
 from app.schemas.pricing import (
     PriceQuoteOut,
@@ -103,6 +112,36 @@ async def admin_delete_package(
     package_id: uuid.UUID, request: Request, session: SessionDep, user: User = perm("catalogue.write")
 ) -> None:
     await package_service.soft_delete(session, package_id, user_actor(user, request))
+
+
+# --- game formats (what is played in each package) -------------------------------------------------
+
+
+@router.get("/game-formats", response_model=list[GameFormatOut])
+async def admin_list_games(session: SessionDep, _: User = perm("catalogue.write")) -> list[GameFormatOut]:
+    return [GameFormatOut.model_validate(g) for g in await package_service.list_games(session)]
+
+
+@router.post("/game-formats", response_model=GameFormatOut, status_code=status.HTTP_201_CREATED)
+async def admin_create_game(
+    body: GameFormatIn, request: Request, session: SessionDep, user: User = perm("catalogue.write")
+) -> GameFormatOut:
+    return GameFormatOut.model_validate(
+        await package_service.create_game(session, body, user_actor(user, request))
+    )
+
+
+@router.patch("/game-formats/{game_id}", response_model=GameFormatOut)
+async def admin_update_game(
+    game_id: uuid.UUID,
+    body: GameFormatUpdate,
+    request: Request,
+    session: SessionDep,
+    user: User = perm("catalogue.write"),
+) -> GameFormatOut:
+    return GameFormatOut.model_validate(
+        await package_service.update_game(session, game_id, body, user_actor(user, request))
+    )
 
 
 # --- occasions --------------------------------------------------------------------------------------

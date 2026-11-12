@@ -27,7 +27,7 @@ test("ADM-E2E-001: owner books at the front desk, cancels, exports and erases th
   // Front-desk booking: hold -> book through the real API.
   await page.getByRole("link", { name: "Bookings" }).click();
   await page.getByTestId("new-booking").click();
-  await page.getByLabel("Package").selectOption({ label: "Beginner · 30 min · 1–20 players" });
+  await page.getByLabel("Package").selectOption({ label: "Beginner · 20 min · 1–20 players" });
   await page.getByLabel("Players").fill("6");
   const day = nextMonday();
   await page.getByLabel("Date", { exact: true }).fill(day);
@@ -114,8 +114,22 @@ test("ADM-E2E-003: owner adds a package, prices it, adds a festival price, and c
   await page.getByLabel("Max players").fill("12");
   await page.getByRole("button", { name: "+ Add point" }).click();
   await page.getByLabel("Feature 1 (English)").fill("Glow vests");
+  await page.getByLabel("Rounds of play").fill("3");
+  await page.getByTestId("pick-game-LAST_MAN_STANDING").click();
+  await page.getByTestId("pick-game-DEATHMATCH").click();
   await page.getByTestId("save-package").click();
-  await expect(page.getByTestId(`package-row-${code}`)).toContainText("Night Ops");
+  const row = page.getByTestId(`package-row-${code}`);
+  await expect(row).toContainText("Night Ops");
+  await expect(row).toContainText("3 rounds");
+  await expect(row).toContainText("Last Man Standing, Deathmatch");
+
+  // Game modes: the owner writes how a mode is played; the assistant reads exactly this.
+  const deathmatch = page.getByTestId("game-row-DEATHMATCH");
+  await expect(deathmatch).toContainText("No description yet");
+  await deathmatch.getByRole("button", { name: "Edit" }).click();
+  await page.getByLabel("How it's played (English)").fill("Every player for themselves; most tags wins.");
+  await page.getByTestId("save-game").click();
+  await expect(deathmatch).toContainText("most tags wins");
 
   // Regular prices: weekday 500, weekend 650.
   await page.getByRole("link", { name: "Pricing" }).click();

@@ -143,9 +143,14 @@ def summarize(s: KioskState) -> S:
                 "code": p.code,
                 "name": p.name_en,
                 "duration_min": p.duration_min,
-                "games": p.games_count,
-                "formats": p.formats_count,
-                "features": [f["en"] for f in p.features],
+                "rounds_of_play": p.games_count,
+                "game_modes": [
+                    {"name": g["en"], "how_it_works": g["about_en"]} if g["about_en"] else {"name": g["en"]}
+                    for g in p.games
+                ],
+                "number_of_game_modes": p.formats_count,
+                "included": [f["en"] for f in p.features],
+                "description": p.description_en or None,
                 "price_per_person_today_inr": p.price_per_person,
                 "estimated_total_today_inr": p.estimated_total,
                 "available_for_group": p.eligible,

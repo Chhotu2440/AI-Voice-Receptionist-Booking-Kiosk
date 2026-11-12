@@ -20,6 +20,41 @@ class FeatureOut(ORMModel):
     text_hi: str
 
 
+class GameFormatIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    code: str = Field(pattern=r"^[A-Z0-9_]{2,32}$")
+    name_en: str = Field(min_length=1, max_length=64)
+    name_hi: str = Field(default="", max_length=64)
+    description_en: str = Field(default="", max_length=400)
+    description_hi: str = Field(default="", max_length=400)
+    round_minutes: int | None = Field(default=None, ge=1, le=120)
+    sort_order: int = Field(default=0, ge=0, le=1000)
+    is_active: bool = True
+
+
+class GameFormatUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name_en: str | None = Field(default=None, min_length=1, max_length=64)
+    name_hi: str | None = Field(default=None, max_length=64)
+    description_en: str | None = Field(default=None, max_length=400)
+    description_hi: str | None = Field(default=None, max_length=400)
+    round_minutes: int | None = Field(default=None, ge=1, le=120)
+    sort_order: int | None = Field(default=None, ge=0, le=1000)
+    is_active: bool | None = None
+
+
+class GameFormatOut(ORMModel):
+    id: uuid.UUID
+    code: str
+    name_en: str
+    name_hi: str
+    description_en: str
+    description_hi: str
+    round_minutes: int | None
+    sort_order: int
+    is_active: bool
+
+
 class _PackageFields(BaseModel):
     model_config = ConfigDict(extra="forbid")
     name_en: str = Field(min_length=1, max_length=80)
@@ -35,6 +70,7 @@ class _PackageFields(BaseModel):
     sort_order: int = Field(default=0, ge=0, le=1000)
     is_active: bool = True
     features: list[FeatureIn] = Field(default_factory=list, max_length=20)
+    game_codes: list[str] = Field(default_factory=list, max_length=20)
 
     @model_validator(mode="after")
     def _guest_range(self) -> _PackageFields:
@@ -62,6 +98,7 @@ class PackageUpdate(BaseModel):
     sort_order: int | None = Field(default=None, ge=0, le=1000)
     is_active: bool | None = None
     features: list[FeatureIn] | None = Field(default=None, max_length=20)
+    game_codes: list[str] | None = Field(default=None, max_length=20)
 
 
 class PackageOut(ORMModel):
@@ -80,6 +117,7 @@ class PackageOut(ORMModel):
     sort_order: int
     is_active: bool
     features: list[FeatureOut]
+    games: list[GameFormatOut] = []
 
 
 class PackagePricePreview(BaseModel):

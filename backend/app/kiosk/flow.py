@@ -198,6 +198,15 @@ class KioskFlow:
                     games_count=p.games_count,
                     formats_count=p.formats_count,
                     features=[{"en": f.text_en, "hi": f.text_hi or f.text_en} for f in p.features],
+                    games=[
+                        {
+                            "en": g.name_en,
+                            "hi": g.name_hi or g.name_en,
+                            "about_en": g.description_en,
+                            "about_hi": g.description_hi or g.description_en,
+                        }
+                        for g in p.games
+                    ],
                     recommended=p.is_recommended,
                     eligible=eligible,
                     min_guests=p.min_guests,

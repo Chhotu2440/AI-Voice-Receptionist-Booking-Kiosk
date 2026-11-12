@@ -30,6 +30,7 @@ export interface PackageCard {
   games_count: number | null;
   formats_count: number | null;
   features: { en: string; hi: string }[];
+  games: { en: string; hi: string; about_en: string; about_hi: string }[];
   recommended: boolean;
   eligible: boolean;
   min_guests: number;
